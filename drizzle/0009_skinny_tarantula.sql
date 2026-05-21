@@ -1,0 +1,1 @@
+CREATE INDEX `listen_log_cassette_listened_idx` ON `listen_log` (`cassette_id`,`listened_at`);

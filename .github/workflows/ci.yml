@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Enable pnpm via corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.3 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prettier-Check
+        run: pnpm format:check
+
+      - name: svelte-check (Types)
+        run: pnpm check
+
+      - name: Vitest
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+        env:
+          # CSRF-Origin für SvelteKit beim Build; egal welcher Wert, da nur
+          # eingelesen, nicht enforcement-relevant.
+          ORIGIN: http://localhost

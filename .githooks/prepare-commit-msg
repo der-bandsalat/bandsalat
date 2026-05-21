@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Haengt automatisch einen Co-Authored-By-Trailer fuer marschit an jeden
+# Commit an, sofern noch keiner mit dieser E-Mail vorhanden ist.
+#
+# Aktivieren mit:
+#   git config core.hooksPath .githooks
+set -eu
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="${2-}"
+
+# Bei Merge-/Squash-/Amend-Commits keinen weiteren Trailer anfuegen.
+case "$COMMIT_SOURCE" in
+	merge|squash) exit 0 ;;
+esac
+
+append_trailer() {
+	local needle="$1"
+	local line="$2"
+	grep -qiF "$needle" "$COMMIT_MSG_FILE" && return 0
+
+	# Sicherstellen, dass die Datei mit Newline endet.
+	if [ -n "$(tail -c1 "$COMMIT_MSG_FILE" 2>/dev/null || true)" ]; then
+		printf '\n' >> "$COMMIT_MSG_FILE"
+	fi
+	# Wenn die letzte nicht-leere Zeile noch kein Trailer ist, Leerzeile vor.
+	last_line="$(grep -v '^$' "$COMMIT_MSG_FILE" | tail -n1 || true)"
+	if ! printf '%s' "$last_line" | grep -qE '^[A-Za-z-]+: '; then
+		printf '\n' >> "$COMMIT_MSG_FILE"
+	fi
+	printf '%s\n' "$line" >> "$COMMIT_MSG_FILE"
+}
+
+append_trailer "205287862+marschit@users.noreply.github.com" \
+	"Co-Authored-By: marschit <205287862+marschit@users.noreply.github.com>"
+append_trailer "noreply@anthropic.com" \
+	"Co-Authored-By: Claude <noreply@anthropic.com>"

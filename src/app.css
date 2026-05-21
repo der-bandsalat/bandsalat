@@ -1,0 +1,188 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* Class-basierter Dark-Variant — kontrolliert per <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--font-sans:
+		'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+		Arial, sans-serif;
+	--font-display:
+		'JetBrains Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+		monospace;
+
+	/* Animationen aus bandsa_lat */
+	--animate-fade-up: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+	--animate-spool: spool 4s linear infinite;
+	--animate-tape: tape 6s linear infinite;
+
+	--color-brand-50: #fef7ed;
+	--color-brand-100: #fdedd3;
+	--color-brand-200: #fbd6a6;
+	--color-brand-300: #f8b86d;
+	--color-brand-400: #f59332;
+	--color-brand-500: #f2750c;
+	--color-brand-600: #e35c08;
+	--color-brand-700: #bc450a;
+	--color-brand-800: #95380f;
+	--color-brand-900: #782f10;
+	--color-brand-950: #461806;
+}
+
+/* HiFi-Theme: Japanisches Schwarz-Gold (Marantz/Luxman-Anmutung) ------------ */
+html[data-theme='hifi'] {
+	--color-brand-50: #f5ead0;
+	--color-brand-100: #ead4a3;
+	--color-brand-200: #dfc080;
+	--color-brand-300: #d0a85c;
+	--color-brand-400: #c19c44;
+	--color-brand-500: #d4af37;
+	--color-brand-600: #e5c14a;
+	--color-brand-700: #8a6f1d;
+	--color-brand-800: #5c4a12;
+	--color-brand-900: #3a2f0a;
+	--color-brand-950: #1c1408;
+
+	/* Stone wird wärmer + tiefer schwarz */
+	--color-stone-100: #ede4cf;
+	--color-stone-200: #d6c6a2;
+	--color-stone-300: #b8a888;
+	--color-stone-400: #a8957a;
+	--color-stone-500: #78695a;
+	--color-stone-600: #4f4337;
+	--color-stone-700: #3a2f25;
+	--color-stone-800: #1f1a14;
+	--color-stone-900: #14110d;
+	--color-stone-950: #0a0907;
+}
+
+/* Default & Light --------------------------------------------------------- */
+html,
+body {
+	height: 100%;
+	background: var(--color-stone-50);
+	color: var(--color-stone-900);
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Forced Dark via class="dark" auf <html> --------------------------------- */
+html.dark,
+html.dark body {
+	background: var(--color-stone-950);
+	color: var(--color-stone-100);
+	color-scheme: dark;
+}
+
+/* HiFi-spezifische Akzente ----------------------------------------------- */
+html[data-theme='hifi'],
+html[data-theme='hifi'] body {
+	background: var(--color-stone-950);
+	color: var(--color-stone-100);
+	color-scheme: dark;
+}
+html[data-theme='hifi'] {
+	/* feiner Glanz auf der Karten-Borderline, wie gebürstetes Aluminium */
+	--tw-ring-color: rgba(212, 175, 55, 0.25);
+}
+
+/* Mobil: Input-Zoom auf iOS Safari unterbinden — Schriftgröße >= 16px. */
+input,
+select,
+textarea {
+	font-size: 1rem;
+}
+
+/* Inter Stylistic-Sets aktivieren (saubere Ziffern, single-storey a, etc.).
+   Wirkungslos bei anderen Fonts. */
+html,
+body {
+	font-feature-settings: 'cv11', 'ss01';
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth-Scroll für Anker. */
+html {
+	scroll-behavior: smooth;
+}
+
+/* Custom Selection. */
+::selection {
+	background: var(--color-brand-500);
+	color: white;
+}
+
+/* Bandsa.lat-Animations -------------------------------------------------- */
+@keyframes fadeUp {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes spool {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@keyframes tape {
+	/* Spulen drehen clockwise: am 3-Uhr-Punkt der linken Spule und 9-Uhr-Punkt
+	   der rechten bewegt sich die Oberflaeche so, dass das dazwischenliegende
+	   Band von rechts nach links laeuft. Path ist L->R gezeichnet, also
+	   POSITIVE dashoffset = Dashes wandern entgegen der Path-Richtung. */
+	to {
+		stroke-dashoffset: 138;
+	}
+}
+
+/* Reveal-Klasse. Default = unsichtbar mit Transition; ohne JS (oder bei
+   JS-Crash, bevor `.js` gesetzt wird) sofort sichtbar — verhindert FOUC
+   ohne JS UND schützt vor unsichtbarem Inhalt bei Init-Fehlern. */
+.reveal {
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+		transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal-in {
+	opacity: 1;
+	transform: translateY(0);
+}
+html:not(.js) .reveal {
+	opacity: 1;
+	transform: none;
+	transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+	/* Hover-Lift-Vokabel auf Karten deaktivieren */
+	.hover\:-translate-y-0\.5:hover,
+	.hover\:-translate-y-1:hover {
+		transform: none !important;
+	}
+}
+
+/* Subtile Grain-Textur. */
+.grain {
+	position: relative;
+	isolation: isolate;
+}
+.grain::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: -1;
+	opacity: 0.04;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+}

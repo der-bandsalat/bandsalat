@@ -1,0 +1,1 @@
+ALTER TABLE `folge_cover` ADD `titel` text;

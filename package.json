@@ -1,0 +1,92 @@
+{
+	"name": "bandsalat",
+	"private": true,
+	"version": "0.1.0-beta",
+	"type": "module",
+	"description": "Self-hosted Katalog für Hörspielkassetten mit Discogs-Zwei-Wege-Sync",
+	"license": "MIT",
+	"author": "Malte Marschall",
+	"contributors": [
+		{
+			"name": "marschit",
+			"url": "https://github.com/marschit"
+		},
+		{
+			"name": "MarschMallow",
+			"url": "https://github.com/MarschMallow"
+		},
+		{
+			"name": "Claude (Anthropic)",
+			"url": "https://claude.com/claude-code"
+		}
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/der-bandsalat/bandsalat.git"
+	},
+	"bugs": {
+		"url": "https://github.com/der-bandsalat/bandsalat/issues"
+	},
+	"homepage": "https://github.com/der-bandsalat/bandsalat#readme",
+	"keywords": [
+		"hörspiel",
+		"kassetten",
+		"katalog",
+		"discogs",
+		"self-hosted",
+		"sveltekit",
+		"sqlite"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"start": "node build",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "tsx --env-file-if-exists=.env src/lib/server/db/migrate.ts",
+		"db:seed": "tsx --env-file-if-exists=.env src/lib/server/db/seed.ts",
+		"db:enrich-demo": "tsx --env-file-if-exists=.env scripts/enrich-demo.ts",
+		"db:import-discogs": "tsx --env-file-if-exists=.env scripts/import-discogs.ts",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-node": "^5.5.4",
+		"@sveltejs/kit": "^2.57.0",
+		"@sveltejs/vite-plugin-svelte": "^7.0.0",
+		"@tailwindcss/vite": "^4.3.0",
+		"@types/better-sqlite3": "^7.6.13",
+		"@types/node": "^25.8.0",
+		"drizzle-kit": "^0.31.10",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^3.5.2",
+		"svelte": "^5.55.2",
+		"svelte-check": "^4.4.6",
+		"tailwindcss": "^4.3.0",
+		"tsx": "^4.22.1",
+		"typescript": "^6.0.2",
+		"vite": "^8.0.7",
+		"vitest": "^4.1.6"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.96.0",
+		"@fontsource-variable/inter": "^5.2.8",
+		"@fontsource-variable/jetbrains-mono": "^5.2.8",
+		"@fontsource-variable/plus-jakarta-sans": "^5.2.8",
+		"@lucide/svelte": "^1.16.0",
+		"argon2": "^0.44.0",
+		"better-sqlite3": "^12.10.0",
+		"drizzle-orm": "^0.45.2",
+		"sharp": "^0.34.5",
+		"xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
+		"zod": "^4.4.3"
+	}
+}
