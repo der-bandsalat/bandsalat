@@ -15,7 +15,7 @@
 </script>
 
 <header
-	class="sticky top-0 z-20 border-b border-stone-200/50 bg-white/85 backdrop-blur-xl dark:border-stone-800/60 dark:bg-stone-950/80"
+	class="sticky top-[var(--demo-banner-h,0px)] z-20 border-b border-stone-200/50 bg-white/85 backdrop-blur-xl dark:border-stone-800/60 dark:bg-stone-950/80"
 >
 	<div>
 		<div class="mx-auto flex h-14 max-w-2xl items-center gap-1 px-3">

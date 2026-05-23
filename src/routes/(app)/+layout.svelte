@@ -26,8 +26,28 @@
 	<DemoBanner expiresAt={data.demo.expiresAt} orchestratorUrl={data.demo.orchestratorUrl} />
 {/if}
 
-<div class="min-h-screen pb-24" class:pt-12={data.demo}>
+<!-- Banner ist fixed top-0; sticky AppHeader liest --demo-banner-h, damit er
+     direkt drunter andockt statt verdeckt zu werden. Mobile wickeln die CTAs
+     in eine zweite Zeile, daher dort mehr Höhe. -->
+<div
+	class="min-h-screen pb-24 demo-shell"
+	class:demo-active={data.demo}
+>
 	{@render children()}
 </div>
 <AppNav />
 <ToastContainer />
+
+<style>
+	.demo-active {
+		padding-top: var(--demo-banner-h, 0);
+	}
+	:global(.demo-active) {
+		--demo-banner-h: 3.25rem;
+	}
+	@media (max-width: 640px) {
+		:global(.demo-active) {
+			--demo-banner-h: 5.5rem;
+		}
+	}
+</style>
