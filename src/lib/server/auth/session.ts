@@ -20,9 +20,13 @@ function constEq(a: string, b: string): boolean {
  * leer sein (Legacy-Token vor Multi-User), dann wird der Token akzeptiert
  * aber ohne User-Identität — Migrations-Pfad.
  */
-export function createSessionToken(userId: string): { token: string; expiresAt: Date } {
-	const days = env().SESSION_DAYS;
-	const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+export function createSessionToken(
+	userId: string,
+	options?: { expiresAt?: Date }
+): { token: string; expiresAt: Date } {
+	const expiresAt =
+		options?.expiresAt ??
+		new Date(Date.now() + env().SESSION_DAYS * 24 * 60 * 60 * 1000);
 	const exp = expiresAt.getTime().toString(10);
 	const nonce = randomBytes(16).toString('base64url');
 	const payload = `${userId}.${exp}.${nonce}`;

@@ -136,7 +136,8 @@ export const users = sqliteTable(
 		active: integer('active', { mode: 'boolean' }).notNull().default(true),
 		createdAt: text('created_at').notNull().default(nowIso),
 		updatedAt: text('updated_at').notNull().default(nowIso),
-		lastLoginAt: text('last_login_at')
+		lastLoginAt: text('last_login_at'),
+		demoScansUsed: integer('demo_scans_used').notNull().default(0)
 	},
 	(t) => [index('users_username_idx').on(t.username), index('users_email_idx').on(t.email)]
 );
