@@ -49,7 +49,12 @@ const Env = z.object({
 	DEMO_SESSION_HOURS: z.coerce.number().int().positive().default(12),
 	DEMO_SCAN_LIMIT: z.coerce.number().int().nonnegative().default(3),
 	DEMO_USERNAME: z.string().default('demo'),
-	ORCHESTRATOR_URL: z.string().url().optional()
+	ORCHESTRATOR_URL: z.string().url().optional(),
+	// Wenn gesetzt, aktiviert /api/support/login — der Orchestrator-Admin kann
+	// sich damit als beliebiger Bandsalat-User einloggen (Support-Zugang).
+	// Separates Secret von DEMO_HMAC_SECRET damit Prod-Slots ohne Demo-Setup
+	// trotzdem Support haben können.
+	SUPPORT_HMAC_SECRET: z.string().min(32).optional()
 });
 
 export type AppEnv = z.infer<typeof Env>;

@@ -7,7 +7,7 @@ import { htmlAttrsFor, readTheme } from '$lib/server/theme';
 initApp();
 
 const PUBLIC_PATHS = new Set(['/login', '/healthz', '/robots.txt', '/favicon.ico']);
-const PUBLIC_PREFIXES = ['/_app/', '/static/', '/share/', '/api/demo/'];
+const PUBLIC_PREFIXES = ['/_app/', '/static/', '/share/', '/api/demo/', '/api/support/'];
 
 function isPublic(pathname: string): boolean {
 	if (PUBLIC_PATHS.has(pathname)) return true;
