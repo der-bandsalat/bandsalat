@@ -107,6 +107,15 @@ export function recordLogin(id: string): void {
 	db().update(users).set({ lastLoginAt: nowIso() }).where(eq(users.id, id)).run();
 }
 
+export function incrementDemoScans(id: string): number {
+	db()
+		.update(users)
+		.set({ demoScansUsed: sql`${users.demoScansUsed} + 1` })
+		.where(eq(users.id, id))
+		.run();
+	return getUserById(id)?.demoScansUsed ?? 0;
+}
+
 export async function verifyUserPassword(user: User, password: string): Promise<boolean> {
 	try {
 		return await argon2.verify(user.passwordHash, password);

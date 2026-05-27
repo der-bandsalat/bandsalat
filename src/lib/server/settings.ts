@@ -23,10 +23,15 @@ function pick(metaKey: string, envFallback: string | undefined): string | null {
 }
 
 export function getDiscogsToken(): string | null {
+	// Demo-Slots dürfen NICHT auf den geteilten Instanz-Token zurückfallen, sonst
+	// schreibt jeder Demo-User auf das gleiche Discogs-Konto und brennt Quota.
+	// Der User kann unter Einstellungen → Keys einen eigenen Token eintragen.
+	if (env().DEMO_MODE) return getMeta(KEY_DISCOGS_TOKEN) || null;
 	return pick(KEY_DISCOGS_TOKEN, env().DISCOGS_TOKEN);
 }
 
 export function getDiscogsUsername(): string | null {
+	if (env().DEMO_MODE) return getMeta(KEY_DISCOGS_USERNAME) || null;
 	return pick(KEY_DISCOGS_USERNAME, env().DISCOGS_USERNAME);
 }
 

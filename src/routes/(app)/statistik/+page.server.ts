@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { env } from '$lib/server/env';
 import { getStats } from '$lib/server/db/stats';
+import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
 import {
 	getPriceRefreshStatus,
 	resetPriceRefreshStatus,
@@ -9,11 +10,11 @@ import {
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () => {
-	const e = env();
 	return {
 		stats: getStats(),
 		priceStatus: getPriceRefreshStatus(),
-		hasDiscogs: Boolean(e.DISCOGS_TOKEN && e.DISCOGS_USERNAME)
+		hasDiscogs: Boolean(getDiscogsToken() && getDiscogsUsername()),
+		demoMode: env().DEMO_MODE
 	};
 };
 

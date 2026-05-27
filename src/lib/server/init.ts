@@ -3,9 +3,10 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db/client';
-import { countUsers, createUser } from './db/users';
+import { countUsers, createUser, getUserByLogin } from './db/users';
 import { env } from './env';
 import argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 
 let initialized = false;
 
@@ -28,9 +29,32 @@ export function initApp() {
 	// Erst-Setup: wenn Users-Tabelle leer ist und APP_PASSWORD/_HASH gesetzt,
 	// einen initialen Admin anlegen. Damit funktioniert das Multi-User-Update
 	// kompatibel zum bisherigen Single-User-Env-Setup.
-	void seedAdminIfNeeded();
+	void seedAdminIfNeeded().then(() => seedDemoIfNeeded());
 
 	initialized = true;
+}
+
+async function seedDemoIfNeeded(): Promise<void> {
+	try {
+		const e = env();
+		if (!e.DEMO_MODE) return;
+		if (getUserByLogin(e.DEMO_USERNAME)) return;
+		// Demo-User mit Editor-Rolle und Zufalls-Passwort. Login läuft nur per
+		// Magic-Token, das Passwort wird nie benutzt.
+		const passwordHash = await argon2.hash(randomBytes(32).toString('hex'), {
+			type: argon2.argon2id
+		});
+		await createUser({
+			username: e.DEMO_USERNAME,
+			email: `${e.DEMO_USERNAME}@demo.local`,
+			passwordHash,
+			role: 'editor',
+			active: true
+		});
+		console.log(`[init] Demo-User angelegt: ${e.DEMO_USERNAME} (Login nur per Magic-Token).`);
+	} catch (err) {
+		console.error('[init] Demo-Seed fehlgeschlagen:', err);
+	}
 }
 
 async function seedAdminIfNeeded(): Promise<void> {

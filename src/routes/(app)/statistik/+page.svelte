@@ -176,8 +176,15 @@
 			<div
 				class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
 			>
-				Setze <code>DISCOGS_TOKEN</code> + <code>DISCOGS_USERNAME</code> in der <code>.env</code>,
-				damit Preise gezogen werden können.
+				{#if data.demoMode}
+					Trag deinen eigenen <strong>Discogs-Token</strong> und Username unter
+					<a href="/einstellungen/keys" class="font-semibold underline">Einstellungen → Keys</a>
+					ein — dann werden Marktwerte gezogen.
+				{:else}
+					Setze <code>DISCOGS_TOKEN</code> + <code>DISCOGS_USERNAME</code> in der <code>.env</code>
+					oder unter <a href="/einstellungen/keys" class="underline">Einstellungen → Keys</a>, damit
+					Preise gezogen werden können.
+				{/if}
 			</div>
 		{:else if s.marketValue.cachedReleases === 0}
 			<div

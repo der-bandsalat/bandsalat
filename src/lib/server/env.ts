@@ -39,7 +39,22 @@ const Env = z.object({
 	SCAN_MODEL: z.string().default('claude-haiku-4-5-20251001'),
 	DATA_DIR: z.string().default('./data'),
 	PORT: z.coerce.number().int().positive().default(3000),
-	NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
+	NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+	// --- Demo-Modus (vom Orchestrator gesteuert) ---
+	DEMO_MODE: z
+		.string()
+		.optional()
+		.transform((v) => v === 'true' || v === '1'),
+	DEMO_HMAC_SECRET: z.string().min(32).optional(),
+	DEMO_SESSION_HOURS: z.coerce.number().int().positive().default(12),
+	DEMO_SCAN_LIMIT: z.coerce.number().int().nonnegative().default(3),
+	DEMO_USERNAME: z.string().default('demo'),
+	ORCHESTRATOR_URL: z.string().url().optional(),
+	// Wenn gesetzt, aktiviert /api/support/login — der Orchestrator-Admin kann
+	// sich damit als beliebiger Bandsalat-User einloggen (Support-Zugang).
+	// Separates Secret von DEMO_HMAC_SECRET damit Prod-Slots ohne Demo-Setup
+	// trotzdem Support haben können.
+	SUPPORT_HMAC_SECRET: z.string().min(32).optional()
 });
 
 export type AppEnv = z.infer<typeof Env>;
@@ -62,6 +77,9 @@ export function env(): AppEnv {
 	}
 	if (!parsed.data.APP_PASSWORD && !parsed.data.APP_PASSWORD_HASH) {
 		throw new Error('APP_PASSWORD oder APP_PASSWORD_HASH muss gesetzt sein.');
+	}
+	if (parsed.data.DEMO_MODE && !parsed.data.DEMO_HMAC_SECRET) {
+		throw new Error('DEMO_MODE=true erfordert DEMO_HMAC_SECRET (>=32 Zeichen).');
 	}
 	cached = parsed.data;
 	return cached;

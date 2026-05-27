@@ -8,6 +8,11 @@ import { DiscogsError } from '$lib/server/discogs/client';
 import { env } from '$lib/server/env';
 import { findPotentialDuplicates } from '$lib/server/db/cassettes';
 import { getCachedPrices, priceForGrade } from '$lib/server/discogs/prices';
+import { getUserById, incrementDemoScans } from '$lib/server/db/users';
+import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
+import { db } from '$lib/server/db/client';
+import { scanEvents } from '$lib/server/db/schema';
+import { randomUUID } from 'node:crypto';
 import { coverThumbUrl } from '$lib/util/cover';
 import type { SearchResult } from '$lib/server/discogs/types';
 import type { Cassette, MediaGrade } from '$lib/server/db/schema';
@@ -72,6 +77,23 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 	if (!ipLimit.allowed) {
 		throw error(429, 'Zu viele Scans von dieser IP.');
 	}
+	// Demo-Modus: hartes Lifetime-Limit pro Slot (Counter wird beim Nightly-
+	// Reset durch Volume-Restore wieder auf 0 gesetzt).
+	const envCfg = env();
+	if (envCfg.DEMO_MODE) {
+		if (envCfg.DEMO_SCAN_LIMIT === 0) {
+			return json({ error: 'Vision-Scan ist in dieser Demo deaktiviert.' }, { status: 403 });
+		}
+		const dbUser = getUserById(locals.user!.id);
+		if (dbUser && dbUser.demoScansUsed >= envCfg.DEMO_SCAN_LIMIT) {
+			return json(
+				{
+					error: `Demo-Limit erreicht: maximal ${envCfg.DEMO_SCAN_LIMIT} Vision-Scans pro Session. Beim nächtlichen Reset wieder verfügbar.`
+				},
+				{ status: 429 }
+			);
+		}
+	}
 	if (!hasAnthropic()) {
 		return json(
 			{ error: 'ANTHROPIC_API_KEY ist nicht gesetzt. Bitte in .env eintragen.' },
@@ -109,13 +131,36 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 		return json({ error: msg }, { status: 502 });
 	}
 
+	if (envCfg.DEMO_MODE) {
+		incrementDemoScans(locals.user!.id);
+	}
+
 	const { extracted, model, tokens } = scanResult;
 
-	// Discogs Auto-Search wenn Token gesetzt und genug Kontext
+	// Event-Log für Statistik (lifetime scan-count + tokens). Schluckt Fehler —
+	// das eigentliche Scan-Result ist wichtiger.
+	try {
+		db()
+			.insert(scanEvents)
+			.values({
+				id: randomUUID(),
+				userId: locals.user!.id,
+				model,
+				inputTokens: tokens.input,
+				outputTokens: tokens.output,
+				success: true
+			})
+			.run();
+	} catch (err) {
+		console.warn('[scan] event log insert failed:', err);
+	}
+
+	// Discogs Auto-Search wenn Token gesetzt und genug Kontext. getDiscogsToken()
+	// respektiert DB-Overrides aus Einstellungen → Keys und unterdrückt im
+	// DEMO_MODE den geteilten Instanz-Token.
 	let discogsHits: SearchResult[] = [];
 	let discogsError: string | null = null;
-	const e = env();
-	const hasDiscogs = Boolean(e.DISCOGS_TOKEN && e.DISCOGS_USERNAME);
+	const hasDiscogs = Boolean(getDiscogsToken() && getDiscogsUsername());
 	if (hasDiscogs) {
 		const queryParts = [extracted.serie, extracted.folge_nr?.toString(), extracted.titel].filter(
 			(s): s is string => Boolean(s && s.trim().length > 0)

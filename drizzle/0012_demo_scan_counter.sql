@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `demo_scans_used` integer DEFAULT 0 NOT NULL;
