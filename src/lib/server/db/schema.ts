@@ -142,6 +142,26 @@ export const users = sqliteTable(
 	(t) => [index('users_username_idx').on(t.username), index('users_email_idx').on(t.email)]
 );
 
+/** Event-Log für Vision-Scans. Wird beim erfolgreichen oder gescheiterten
+ *  Scan-Aufruf befüllt — damit kann der Orchestrator (oder die App-Stats)
+ *  Lifetime-Scan-Counts und Tokens-Statistik anzeigen. */
+export const scanEvents = sqliteTable(
+	'scan_events',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull(),
+		model: text('model').notNull(),
+		inputTokens: integer('input_tokens').notNull().default(0),
+		outputTokens: integer('output_tokens').notNull().default(0),
+		success: integer('success', { mode: 'boolean' }).notNull().default(true),
+		createdAt: text('created_at').notNull().default(nowIso)
+	},
+	(t) => [
+		index('scan_events_created_idx').on(t.createdAt),
+		index('scan_events_user_idx').on(t.userId)
+	]
+);
+
 export const shares = sqliteTable(
 	'shares',
 	{

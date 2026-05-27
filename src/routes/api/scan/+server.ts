@@ -10,6 +10,9 @@ import { findPotentialDuplicates } from '$lib/server/db/cassettes';
 import { getCachedPrices, priceForGrade } from '$lib/server/discogs/prices';
 import { getUserById, incrementDemoScans } from '$lib/server/db/users';
 import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
+import { db } from '$lib/server/db/client';
+import { scanEvents } from '$lib/server/db/schema';
+import { randomUUID } from 'node:crypto';
 import { coverThumbUrl } from '$lib/util/cover';
 import type { SearchResult } from '$lib/server/discogs/types';
 import type { Cassette, MediaGrade } from '$lib/server/db/schema';
@@ -133,6 +136,24 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 	}
 
 	const { extracted, model, tokens } = scanResult;
+
+	// Event-Log für Statistik (lifetime scan-count + tokens). Schluckt Fehler —
+	// das eigentliche Scan-Result ist wichtiger.
+	try {
+		db()
+			.insert(scanEvents)
+			.values({
+				id: randomUUID(),
+				userId: locals.user!.id,
+				model,
+				inputTokens: tokens.input,
+				outputTokens: tokens.output,
+				success: true
+			})
+			.run();
+	} catch (err) {
+		console.warn('[scan] event log insert failed:', err);
+	}
 
 	// Discogs Auto-Search wenn Token gesetzt und genug Kontext. getDiscogsToken()
 	// respektiert DB-Overrides aus Einstellungen → Keys und unterdrückt im
