@@ -105,6 +105,9 @@
 		lightboxOpen = false;
 	}
 
+	// Foto-Verwalten-Sheet (geöffnet per Cover-Tap in der Ansicht-Mode)
+	let photoSheetOpen = $state(false);
+
 	// Klappentext-Editor State
 	let synopsisEditOpen = $state(false);
 	let synopsisDraft = $state('');
@@ -208,21 +211,34 @@
 			<div
 				class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
 			>
-				<div class="aspect-square bg-stone-100 dark:bg-stone-800">
+				<div class="relative aspect-square bg-stone-100 dark:bg-stone-800">
 					{#if coverFullStr}
 						<button
 							type="button"
-							onclick={openLightbox}
+							onclick={() => (photoSheetOpen = true)}
 							class="block h-full w-full"
-							aria-label="Cover vergrößern"
+							aria-label="Fotos verwalten"
 						>
 							<img src={coverThumbStr} alt={c.titel} class="h-full w-full object-cover" />
 						</button>
 					{:else}
-						<div class="flex h-full items-center justify-center text-stone-400 dark:text-stone-600">
+						<button
+							type="button"
+							onclick={() => (photoSheetOpen = true)}
+							class="flex h-full w-full items-center justify-center text-stone-400 dark:text-stone-600"
+							aria-label="Fotos hinzufügen"
+						>
 							<ImageIcon size={48} />
-						</div>
+						</button>
 					{/if}
+					<button
+						type="button"
+						onclick={() => (photoSheetOpen = true)}
+						class="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/75"
+					>
+						<Pencil size={12} />
+						Fotos
+					</button>
 				</div>
 
 				{#if coverSources.length > 0 || data.dreiSupported}
@@ -944,5 +960,45 @@
 			class="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
 			onclick={(e) => e.stopPropagation()}
 		/>
+	</div>
+{/if}
+
+{#if photoSheetOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center"
+		onclick={() => (photoSheetOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Fotos verwalten"
+		tabindex="-1"
+	>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-stone-900 sm:max-w-2xl sm:rounded-2xl"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<header
+				class="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-700"
+			>
+				<h2 class="text-sm font-semibold text-stone-800 dark:text-stone-100">Fotos verwalten</h2>
+				<button
+					type="button"
+					onclick={() => (photoSheetOpen = false)}
+					class="-mr-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+					aria-label="Schließen"
+				>
+					<X size={18} />
+				</button>
+			</header>
+			<div
+				class="overflow-y-auto p-4"
+				style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))"
+			>
+				<PhotoGallery cassetteId={c.id} photos={data.photos} />
+			</div>
+		</div>
 	</div>
 {/if}

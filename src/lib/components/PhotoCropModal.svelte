@@ -37,7 +37,10 @@
 		if (!imgUrl || !containerEl) return;
 		let cancelled = false;
 		(async () => {
-			const { default: Cropper } = await import('cropperjs');
+			// dist/cropper.esm.js statt package default (raw) — letzteres registriert
+			// die <cropper-canvas>/<cropper-image>/... Web-Components nicht und das
+			// Crop-UI bleibt unsichtbar.
+			const { default: Cropper } = await import('cropperjs/dist/cropper.esm.js');
 			if (cancelled) return;
 			// Frisches <img> in container injizieren — cropperjs ersetzt es durch
 			// das <cropper-canvas>-Konstrukt.
