@@ -5,6 +5,7 @@
 		formStateFromValues
 	} from '$lib/components/CassetteForm.svelte';
 	import DiscogsSearch from '$lib/components/DiscogsSearch.svelte';
+	import PhotoGallery from '$lib/components/PhotoGallery.svelte';
 	import { enhance } from '$app/forms';
 	import { formatDate, formatEur, formatRelative } from '$lib/util/format';
 	import Save from '@lucide/svelte/icons/save';
@@ -159,20 +160,15 @@
 				bind:formState
 				fieldErrors={form?.fieldErrors}
 				onSearchDiscogs={() => (showSearch = true)}
+				showPhoto={false}
 			/>
 
-			{#if c.coverFotoPath}
-				<label
-					class="mt-3 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm dark:border-stone-800 dark:bg-stone-900"
-				>
-					<input
-						type="checkbox"
-						name="removePhoto"
-						class="h-4 w-4 rounded border-stone-300 text-brand-500 focus:ring-brand-500"
-					/>
-					Foto entfernen
-				</label>
-			{/if}
+			<div
+				class="mt-4 rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900"
+			>
+				<h2 class="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">Fotos</h2>
+				<PhotoGallery cassetteId={c.id} photos={data.photos} />
+			</div>
 
 			{#if form?.error}
 				<p

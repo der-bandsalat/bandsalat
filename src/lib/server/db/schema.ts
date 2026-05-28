@@ -142,6 +142,32 @@ export const users = sqliteTable(
 	(t) => [index('users_username_idx').on(t.username), index('users_email_idx').on(t.email)]
 );
 
+export const CASSETTE_PHOTO_ROLES = ['front', 'back', 'extra'] as const;
+export type CassettePhotoRole = (typeof CASSETTE_PHOTO_ROLES)[number];
+
+/** Fotos einer Kassette. Front + Back + beliebig viele Extras, jeweils mit
+ *  thumbnail. `coverFotoPath` auf cassettes bleibt synchron zum
+ *  ersten 'front'-Foto für API-Kompatibilität älterer Endpoints. */
+export const cassettePhotos = sqliteTable(
+	'cassette_photos',
+	{
+		id: text('id').primaryKey(),
+		cassetteId: text('cassette_id')
+			.notNull()
+			.references(() => cassettes.id, { onDelete: 'cascade' }),
+		role: text('role').notNull().default('extra').$type<CassettePhotoRole>(),
+		sortOrder: integer('sort_order').notNull().default(0),
+		path: text('path').notNull(),
+		thumbPath: text('thumb_path'),
+		caption: text('caption'),
+		createdAt: text('created_at').notNull().default(nowIso)
+	},
+	(t) => [
+		index('cassette_photos_cassette_idx').on(t.cassetteId),
+		index('cassette_photos_role_idx').on(t.cassetteId, t.role)
+	]
+);
+
 /** Event-Log für Vision-Scans. Wird beim erfolgreichen oder gescheiterten
  *  Scan-Aufruf befüllt — damit kann der Orchestrator (oder die App-Stats)
  *  Lifetime-Scan-Counts und Tokens-Statistik anzeigen. */

@@ -6,6 +6,7 @@ import {
 	distinctSerien
 } from '$lib/server/db/cassettes';
 import { savePhoto } from '$lib/server/storage/photos';
+import { addCassettePhoto } from '$lib/server/db/cassette-photos';
 import { cacheCoverFromUrl } from '$lib/server/discogs/cover-cache';
 import { CassetteFormSchema } from '$lib/validation/cassette';
 import { MEDIA_GRADES, SLEEVE_GRADES } from '$lib/server/db/schema';
@@ -53,10 +54,11 @@ export const actions: Actions = {
 
 		const photo = form.get('photo');
 		let coverFotoPath: string | null = null;
+		let savedFront: { original: string; thumb: string } | null = null;
 		if (photo instanceof File && photo.size > 0) {
 			try {
-				const saved = await savePhoto(photo);
-				coverFotoPath = saved.original;
+				savedFront = await savePhoto(photo);
+				coverFotoPath = savedFront.original;
 			} catch (e) {
 				return fail(400, {
 					error: e instanceof Error ? e.message : 'Foto konnte nicht gespeichert werden.',
@@ -86,6 +88,15 @@ export const actions: Actions = {
 			coverFotoPath,
 			discogsCoverCachePath
 		});
+
+		if (savedFront) {
+			addCassettePhoto({
+				cassetteId: cassette.id,
+				role: 'front',
+				path: savedFront.original,
+				thumbPath: savedFront.thumb
+			});
+		}
 
 		const goNext = form.get('action') === 'save_and_next';
 		if (goNext) {

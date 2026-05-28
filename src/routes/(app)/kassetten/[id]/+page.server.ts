@@ -8,6 +8,14 @@ import {
 	updateCassette
 } from '$lib/server/db/cassettes';
 import { deletePhoto, savePhoto } from '$lib/server/storage/photos';
+import {
+	addCassettePhoto,
+	deleteCassettePhoto,
+	listCassettePhotos
+} from '$lib/server/db/cassette-photos';
+import { eq, and } from 'drizzle-orm';
+import { db } from '$lib/server/db/client';
+import { cassettePhotos } from '$lib/server/db/schema';
 import { cacheCoverFromUrl } from '$lib/server/discogs/cover-cache';
 import { DiscogsError } from '$lib/server/discogs/client';
 import { pullOne, pushOne, removeOne } from '$lib/server/discogs/sync';
@@ -35,6 +43,7 @@ export const load: PageServerLoad = ({ params }) => {
 		cassette.folgeNr != null ? getFolgeSynopsis(cassette.serie, cassette.folgeNr) : undefined;
 	return {
 		cassette,
+		photos: listCassettePhotos(cassette.id),
 		serien: distinctSerien(),
 		labels: distinctLabels(),
 		folders: distinctFolders(),
@@ -133,6 +142,12 @@ export const actions: Actions = {
 		ensureEditor(locals);
 		const existing = getCassette(params.id);
 		if (!existing) throw error(404);
+		// Alle Foto-Dateien auf Disk löschen bevor cassette wegfällt (cassette_photos
+		// selber wird per ON DELETE CASCADE in der DB entfernt).
+		for (const p of listCassettePhotos(existing.id)) {
+			await deletePhoto(p.path);
+			if (p.thumbPath) await deletePhoto(p.thumbPath);
+		}
 		if (existing.coverFotoPath) await deletePhoto(existing.coverFotoPath);
 		deleteCassette(existing.id);
 		throw redirect(303, '/kassetten');
@@ -260,14 +275,25 @@ export const actions: Actions = {
 		}
 		try {
 			const saved = await savePhoto(file);
-			if (existing.coverFotoPath && existing.coverFotoPath !== saved.original) {
-				await deletePhoto(existing.coverFotoPath);
+			// Bestehende 'front'-Fotos ersetzen (das war die alte 1-Foto-Semantik
+			// dieser Action; PhotoGallery bietet inzwischen Multi-Upload).
+			const oldFront = db()
+				.select()
+				.from(cassettePhotos)
+				.where(and(eq(cassettePhotos.cassetteId, existing.id), eq(cassettePhotos.role, 'front')))
+				.all();
+			for (const f of oldFront) {
+				await deletePhoto(f.path);
+				if (f.thumbPath) await deletePhoto(f.thumbPath);
+				deleteCassettePhoto(f.id);
 			}
-			updateCassette(existing.id, {
-				coverFotoPath: saved.original,
-				// Direkt auf 'photo' setzen — User hat aktiv hochgeladen.
-				coverSource: 'photo'
+			addCassettePhoto({
+				cassetteId: existing.id,
+				role: 'front',
+				path: saved.original,
+				thumbPath: saved.thumb
 			});
+			updateCassette(existing.id, { coverSource: 'photo' });
 		} catch (e) {
 			return fail(400, {
 				coverError: e instanceof Error ? e.message : 'Foto konnte nicht gespeichert werden.'
@@ -280,12 +306,21 @@ export const actions: Actions = {
 		ensureEditor(locals);
 		const existing = getCassette(params.id);
 		if (!existing) throw error(404);
-		if (existing.coverFotoPath) await deletePhoto(existing.coverFotoPath);
-		updateCassette(existing.id, {
-			coverFotoPath: null,
-			// Wenn aktive Quelle 'photo' war, auf 'auto' zurückfallen.
-			...(existing.coverSource === 'photo' ? { coverSource: 'auto' } : {})
-		});
+		// Alle 'front'-Fotos entfernen — syncCoverPath in addCassettePhoto-Helper
+		// setzt cassettes.coverFotoPath dabei automatisch zurück.
+		const fronts = db()
+			.select()
+			.from(cassettePhotos)
+			.where(and(eq(cassettePhotos.cassetteId, existing.id), eq(cassettePhotos.role, 'front')))
+			.all();
+		for (const f of fronts) {
+			await deletePhoto(f.path);
+			if (f.thumbPath) await deletePhoto(f.thumbPath);
+			deleteCassettePhoto(f.id);
+		}
+		if (existing.coverSource === 'photo') {
+			updateCassette(existing.id, { coverSource: 'auto' });
+		}
 		throw redirect(303, `/kassetten/${existing.id}`);
 	},
 
