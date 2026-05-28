@@ -90,5 +90,6 @@ API und Datenbankschema können sich bis 1.0 noch ändern.
 - `/uploads/*` ohne immutable Cache-Control.
 - Touch-Targets der Inline-Rating-Komponente knapp unter 44 px.
 
-[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.1.0-beta...HEAD
+[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/der-bandsalat/bandsalat/compare/v0.1.0-beta...v0.2.1
 [0.1.0-beta]: https://github.com/der-bandsalat/bandsalat/releases/tag/v0.1.0-beta
