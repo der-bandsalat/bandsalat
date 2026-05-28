@@ -123,6 +123,22 @@
 		image.$rotate('90deg');
 	}
 
+	// Fein-Rotation in Grad — fuer schiefe Scans / abfotografierte Cover.
+	let fineDeg = $state(0);
+	let lastAppliedFineDeg = 0;
+	function applyFineRotation(deg: number) {
+		if (!cropper) return;
+		const image = cropper.getCropperImage();
+		if (!image) return;
+		const delta = deg - lastAppliedFineDeg;
+		lastAppliedFineDeg = deg;
+		image.$rotate(`${delta}deg`);
+	}
+	function resetFineRotation() {
+		fineDeg = 0;
+		applyFineRotation(0);
+	}
+
 	async function confirmCrop() {
 		if (!cropper || busy) return;
 		busy = true;
@@ -213,6 +229,31 @@
 				>
 					<RotateCw size={14} />
 				</button>
+			</div>
+			<div class="flex items-center gap-2 px-1">
+				<button
+					type="button"
+					onclick={resetFineRotation}
+					title="Fein-Drehung zurücksetzen"
+					aria-label="Fein-Drehung zurücksetzen"
+					class="rounded px-2 py-1 text-[11px] text-stone-300 hover:bg-stone-800 disabled:opacity-40"
+					disabled={fineDeg === 0}
+				>
+					0°
+				</button>
+				<input
+					type="range"
+					min="-15"
+					max="15"
+					step="0.1"
+					bind:value={fineDeg}
+					oninput={() => applyFineRotation(fineDeg)}
+					aria-label="Fein-Drehung in Grad"
+					class="flex-1 accent-brand-500"
+				/>
+				<span class="w-14 text-right text-[11px] tabular-nums text-stone-300">
+					{fineDeg > 0 ? '+' : ''}{fineDeg.toFixed(1)}°
+				</span>
 			</div>
 			<div class="flex gap-2">
 				<button
