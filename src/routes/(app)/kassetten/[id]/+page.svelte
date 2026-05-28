@@ -130,19 +130,50 @@
 	// Foto-Verwalten-Sheet (geöffnet per Cover-Tap in der Ansicht-Mode)
 	let photoSheetOpen = $state(false);
 
-	// Cover-Slider — durch eigene Fotos (front → back → extras) blättern.
-	// Wenn keine eigenen Fotos vorhanden: leeres Array, dann faellt das Markup
-	// auf das alte coverThumbStr/coverFullStr zurueck (Discogs/External).
-	const coverSlides = $derived(
-		[...data.photos].sort((a, b) => {
+	// Cover-Slider — durch eigene Fotos (front → back → extras) blaettern.
+	// Wenn KEIN eigenes Front-Foto vorhanden, aber ein Cover aus Discogs /
+	// External /Discogs-URL angezeigt wird, kommt das als virtueller
+	// "Front"-Slide an die erste Position. So bleibt das Standard-Cover
+	// sichtbar, sobald der User Rueckseite/Extras hochlaedt — sonst waere
+	// das Discogs-Cover bei vorhandenen back/extras verschluckt worden.
+	interface CoverSlide {
+		key: string;
+		role: 'front' | 'back' | 'extra';
+		thumbUrl: string;
+		fullUrl: string;
+		caption: string | null;
+		isFallback: boolean;
+	}
+	const coverSlides = $derived.by<CoverSlide[]>(() => {
+		const ownSorted = [...data.photos].sort((a, b) => {
 			const roleOrder = { front: 0, back: 1, extra: 2 } as const;
 			return (
 				roleOrder[a.role] - roleOrder[b.role] ||
 				a.sortOrder - b.sortOrder ||
 				a.createdAt.localeCompare(b.createdAt)
 			);
-		})
-	);
+		});
+		const ownMapped: CoverSlide[] = ownSorted.map((p) => ({
+			key: p.id,
+			role: p.role,
+			thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+			fullUrl: `/uploads/${p.path}`,
+			caption: p.caption,
+			isFallback: false
+		}));
+		const hasOwnFront = ownMapped.some((s) => s.role === 'front');
+		if (!hasOwnFront && coverThumbStr && coverFullStr) {
+			ownMapped.unshift({
+				key: '__fallback__',
+				role: 'front',
+				thumbUrl: coverThumbStr,
+				fullUrl: coverFullStr,
+				caption: null,
+				isFallback: true
+			});
+		}
+		return ownMapped;
+	});
 	let slideIdx = $state(0);
 	$effect(() => {
 		// Wenn sich die Fotos-Liste aendert (Upload/Delete), Index in Range halten.
@@ -297,7 +328,7 @@
 							aria-label="Fotos verwalten"
 						>
 							<img
-								src={`/uploads/${cur.thumbPath ?? cur.path}`}
+								src={cur.thumbUrl}
 								alt={cur.caption ?? `${roleLabels[cur.role]} – ${c.titel}`}
 								class="h-full w-full object-cover"
 							/>
@@ -355,10 +386,19 @@
 								></span>
 							{/each}
 						</div>
+						{@const curBadge = coverSlides[Math.min(slideIdx, coverSlides.length - 1)]}
 						<div
 							class="pointer-events-none absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm"
 						>
-							{roleLabels[coverSlides[Math.min(slideIdx, coverSlides.length - 1)].role]}
+							{#if curBadge.isFallback}
+								{c.coverSource === 'discogs'
+									? 'Discogs'
+									: c.coverSource === 'external'
+										? 'Externe Quelle'
+										: 'Aktuell'}
+							{:else}
+								{roleLabels[curBadge.role]}
+							{/if}
 						</div>
 					{/if}
 
