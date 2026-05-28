@@ -28,6 +28,24 @@ export function listCassettePhotos(cassetteId: string) {
 		.all();
 }
 
+/** Anzahl Fotos pro Kassette für eine Liste — eine Aggregat-Query statt N
+ *  Einzel-Queries beim Rendern der Kassetten-Übersicht. */
+export function photoCountsForCassettes(cassetteIds: string[]): Map<string, number> {
+	const out = new Map<string, number>();
+	if (cassetteIds.length === 0) return out;
+	const rows = db()
+		.select({
+			cassetteId: cassettePhotos.cassetteId,
+			cnt: sql<number>`count(*)`
+		})
+		.from(cassettePhotos)
+		.where(sql`${cassettePhotos.cassetteId} IN ${cassetteIds}`)
+		.groupBy(cassettePhotos.cassetteId)
+		.all();
+	for (const r of rows) out.set(r.cassetteId, Number(r.cnt));
+	return out;
+}
+
 export function getCassettePhoto(photoId: string) {
 	return db().select().from(cassettePhotos).where(eq(cassettePhotos.id, photoId)).get();
 }

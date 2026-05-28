@@ -1,4 +1,5 @@
 import { distinctLabels, distinctSerien, listCassettes } from '$lib/server/db/cassettes';
+import { photoCountsForCassettes } from '$lib/server/db/cassette-photos';
 import { getAllFolgeCoversMap } from '$lib/server/db/folge-cover';
 import { findGaps } from '$lib/server/gaps';
 import { getAllSeriesTargets } from '$lib/server/db/series';
@@ -24,11 +25,14 @@ export const load: PageServerLoad = ({ url }) => {
 	);
 	const totalMissing = gaps.reduce((acc, g) => acc + g.missing.length, 0);
 
+	const photoCounts = Object.fromEntries(photoCountsForCassettes(items.map((it) => it.id)));
+
 	return {
 		items,
 		serien,
 		labels,
 		folgeCovers: folgeCoverMap,
+		photoCounts,
 		filter: parsed.success ? parsed.data : {},
 		stats: {
 			total: items.length,

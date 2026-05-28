@@ -23,6 +23,8 @@
 	import Headphones from '@lucide/svelte/icons/headphones';
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -127,6 +129,51 @@
 
 	// Foto-Verwalten-Sheet (geöffnet per Cover-Tap in der Ansicht-Mode)
 	let photoSheetOpen = $state(false);
+
+	// Cover-Slider — durch eigene Fotos (front → back → extras) blättern.
+	// Wenn keine eigenen Fotos vorhanden: leeres Array, dann faellt das Markup
+	// auf das alte coverThumbStr/coverFullStr zurueck (Discogs/External).
+	const coverSlides = $derived(
+		[...data.photos].sort((a, b) => {
+			const roleOrder = { front: 0, back: 1, extra: 2 } as const;
+			return (
+				roleOrder[a.role] - roleOrder[b.role] ||
+				a.sortOrder - b.sortOrder ||
+				a.createdAt.localeCompare(b.createdAt)
+			);
+		})
+	);
+	let slideIdx = $state(0);
+	$effect(() => {
+		// Wenn sich die Fotos-Liste aendert (Upload/Delete), Index in Range halten.
+		if (slideIdx >= coverSlides.length) slideIdx = Math.max(0, coverSlides.length - 1);
+	});
+	function nextSlide(delta: number) {
+		const n = coverSlides.length;
+		if (n <= 1) return;
+		slideIdx = (slideIdx + delta + n) % n;
+	}
+	const roleLabels = { front: 'Front', back: 'Rückseite', extra: 'Extra' } as const;
+
+	// Swipe-Erkennung fuer Touch.
+	let touchStartX = 0;
+	let touchStartY = 0;
+	function onCoverTouchStart(e: TouchEvent) {
+		const t = e.touches[0];
+		if (!t) return;
+		touchStartX = t.clientX;
+		touchStartY = t.clientY;
+	}
+	function onCoverTouchEnd(e: TouchEvent) {
+		const t = e.changedTouches[0];
+		if (!t) return;
+		const dx = t.clientX - touchStartX;
+		const dy = t.clientY - touchStartY;
+		// Nur horizontale Swipes mit ausreichendem Hub auswerten.
+		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+			nextSlide(dx > 0 ? -1 : 1);
+		}
+	}
 
 	// Klappentext-Editor State
 	let synopsisEditOpen = $state(false);
@@ -235,8 +282,27 @@
 			<div
 				class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
 			>
-				<div class="relative aspect-square bg-stone-100 dark:bg-stone-800">
-					{#if coverFullStr}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					class="relative aspect-square bg-stone-100 dark:bg-stone-800"
+					ontouchstart={onCoverTouchStart}
+					ontouchend={onCoverTouchEnd}
+				>
+					{#if coverSlides.length > 0}
+						{@const cur = coverSlides[Math.min(slideIdx, coverSlides.length - 1)]}
+						<button
+							type="button"
+							onclick={() => (photoSheetOpen = true)}
+							class="block h-full w-full"
+							aria-label="Fotos verwalten"
+						>
+							<img
+								src={`/uploads/${cur.thumbPath ?? cur.path}`}
+								alt={cur.caption ?? `${roleLabels[cur.role]} – ${c.titel}`}
+								class="h-full w-full object-cover"
+							/>
+						</button>
+					{:else if coverFullStr}
 						<button
 							type="button"
 							onclick={() => (photoSheetOpen = true)}
@@ -255,6 +321,47 @@
 							<ImageIcon size={48} />
 						</button>
 					{/if}
+
+					{#if coverSlides.length > 1}
+						<button
+							type="button"
+							onclick={(e) => {
+								e.stopPropagation();
+								nextSlide(-1);
+							}}
+							aria-label="Vorheriges Foto"
+							class="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
+						>
+							<ChevronLeft size={20} />
+						</button>
+						<button
+							type="button"
+							onclick={(e) => {
+								e.stopPropagation();
+								nextSlide(1);
+							}}
+							aria-label="Nächstes Foto"
+							class="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
+						>
+							<ChevronRight size={20} />
+						</button>
+						<div
+							class="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
+						>
+							{#each coverSlides as _, i (i)}
+								<span
+									class="h-1.5 rounded-full transition-all
+										{i === slideIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}"
+								></span>
+							{/each}
+						</div>
+						<div
+							class="pointer-events-none absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm"
+						>
+							{roleLabels[coverSlides[Math.min(slideIdx, coverSlides.length - 1)].role]}
+						</div>
+					{/if}
+
 					<button
 						type="button"
 						onclick={() => (photoSheetOpen = true)}

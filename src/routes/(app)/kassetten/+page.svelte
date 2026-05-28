@@ -11,6 +11,7 @@
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import X from '@lucide/svelte/icons/x';
 	import ImageIcon from '@lucide/svelte/icons/image';
+	import ImagesIcon from '@lucide/svelte/icons/images';
 	import CloudCheck from '@lucide/svelte/icons/cloud-check';
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import InlineRating from '$lib/components/InlineRating.svelte';
@@ -302,6 +303,15 @@
 									class="absolute right-1 top-1 rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[10px] font-medium text-white"
 									>Discogs</span
 								>
+							{/if}
+							{#if (data.photoCounts?.[it.id] ?? 0) > 1}
+								<span
+									class="absolute left-1 top-1 flex items-center gap-0.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
+									title="{data.photoCounts[it.id]} Fotos hinterlegt"
+								>
+									<ImagesIcon size={10} />
+									{data.photoCounts[it.id]}
+								</span>
 							{/if}
 						</div>
 						<div class="px-2 pt-2">
