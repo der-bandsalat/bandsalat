@@ -1,7 +1,7 @@
 {
 	"name": "bandsalat",
 	"private": true,
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"type": "module",
 	"description": "Self-hosted Katalog für Hörspielkassetten mit Discogs-Zwei-Wege-Sync",
 	"license": "MIT",
@@ -84,6 +84,7 @@
 		"@lucide/svelte": "^1.16.0",
 		"argon2": "^0.44.0",
 		"better-sqlite3": "^12.10.0",
+		"cropperjs": "^2.1.1",
 		"drizzle-orm": "^0.45.2",
 		"sharp": "^0.34.5",
 		"xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",

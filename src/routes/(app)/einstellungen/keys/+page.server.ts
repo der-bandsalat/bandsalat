@@ -25,8 +25,12 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const token = trimOrNull(form.get('discogs_token'));
 		const username = trimOrNull(form.get('discogs_username'));
-		setDiscogsToken(token);
-		setDiscogsUsername(username);
+		// Leeres Feld = "behalten", nicht "loeschen" — sonst nukt jedes
+		// Speichern-mit-leerem-Token-Feld den eingesteuerten Token weg, weil
+		// das Password-Input aus Sicherheitsgruenden nie vorbefuellt ist.
+		// Explizites Loeschen laeuft ueber clearDiscogs.
+		if (token !== null) setDiscogsToken(token);
+		if (username !== null) setDiscogsUsername(username);
 		throw redirect(303, '/einstellungen/keys?saved=discogs');
 	},
 
@@ -72,8 +76,11 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const key = trimOrNull(form.get('anthropic_key'));
 		const model = trimOrNull(form.get('scan_model'));
-		setAnthropicKey(key);
-		setScanModel(model);
+		// Selbe Regel wie bei Discogs: leeres Key-Feld = behalten.
+		// Modell wird via Radio/Hidden-Input immer mitgeschickt — wenn es
+		// trotzdem mal leer ankommt, ebenfalls Status quo behalten.
+		if (key !== null) setAnthropicKey(key);
+		if (model !== null) setScanModel(model);
 		throw redirect(303, '/einstellungen/keys?saved=anthropic');
 	},
 

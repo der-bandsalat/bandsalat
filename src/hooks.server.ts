@@ -74,7 +74,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 				"script-src 'self' 'unsafe-inline'",
 				// fonts.googleapis.com für das Font-Lab + ggf. zukünftige Webfonts.
 				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-				"img-src 'self' data: https://i.discogs.com https://*.discogs.com https://dreimetadaten.de",
+				// blob: noetig fuer den Foto-Crop-Editor — cropperjs setzt das per
+				// File-Upload erzeugte Bild als <img src="blob:..."> in die Vorschau.
+				"img-src 'self' blob: data: https://i.discogs.com https://*.discogs.com https://dreimetadaten.de",
 				"font-src 'self' https://fonts.gstatic.com",
 				"connect-src 'self'",
 				"frame-ancestors 'none'",

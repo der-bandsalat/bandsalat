@@ -7,6 +7,41 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.1] – 2026-05-28
+
+### Features
+
+- **Multi-Photo pro Kassette**: neue Tabelle `cassette_photos` mit Rollen
+  Front / Rückseite / Extra. Migration 0014 backfilled existierende
+  `cover_foto_path` als Front. API für CRUD + Reorder unter
+  `/api/cassettes/[id]/photos`.
+- **Crop-Editor beim Upload**: Cropper.js v2 Modal mit freier
+  Aspect-Ratio + Presets 1:1 und 4:3, 90°-Drehung und Fein-Rotation
+  (-15° bis +15° in 0.1°-Schritten) zum Geraderücken schiefer Scans.
+- **Cover-Slider** auf der Detail-Seite: blättert durch eigene Fotos +
+  gecachten Discogs-Cover + Dreimetadaten-Cover via Pfeile, Swipe,
+  Pager-Dots. Default-Slide respektiert die aktive Cover-Quelle.
+- **Re-Crop** existierender Fotos in der Galerie (lädt das Original,
+  ersetzt nach Bestätigung).
+- **Foto-Sheet beim Cover-Tap**: zentralisierte Foto-Verwaltung mit
+  read-only Anzeige der externen Quellen (Discogs / Dreimetadaten) plus
+  X-Button zum Räumen.
+- **Foto-Count-Badge** in der Kassetten-Liste für Kassetten mit >1
+  eigenem Foto.
+
+### Fixes
+
+- **Settings-Form** löscht keinen gespeicherten Token mehr beim
+  Speichern mit leerem Feld — leeres Feld behält den Wert, Entfernen
+  geht weiter explizit über den jeweiligen Clear-Button.
+- **CSP** erlaubt `blob:` in `img-src`, damit der Crop-Editor das vom
+  User ausgewählte Foto anzeigen kann.
+- Dockerfile pinnt pnpm auf 11.1.3 (analog CI), sonst bricht
+  `--frozen-lockfile` an Tarball-URLs ohne integrity-Hash ab.
+- Cover-Quelle-Picker um redundante `+Foto hochladen` /
+  `Foto entfernen` Buttons entschlackt — der Gallery-Pfad mit Crop ist
+  jetzt der einzige Weg eigene Fotos zu pflegen.
+
 ## [0.1.0-beta] – 2026-05-21
 
 Erste öffentliche Beta-Version. Funktional vollständig genug für den Eigenbedarf.
@@ -55,5 +90,6 @@ API und Datenbankschema können sich bis 1.0 noch ändern.
 - `/uploads/*` ohne immutable Cache-Control.
 - Touch-Targets der Inline-Rating-Komponente knapp unter 44 px.
 
-[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.1.0-beta...HEAD
+[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/der-bandsalat/bandsalat/compare/v0.1.0-beta...v0.2.1
 [0.1.0-beta]: https://github.com/der-bandsalat/bandsalat/releases/tag/v0.1.0-beta

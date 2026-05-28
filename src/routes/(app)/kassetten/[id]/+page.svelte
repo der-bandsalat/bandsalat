@@ -5,6 +5,7 @@
 		formStateFromValues
 	} from '$lib/components/CassetteForm.svelte';
 	import DiscogsSearch from '$lib/components/DiscogsSearch.svelte';
+	import PhotoGallery from '$lib/components/PhotoGallery.svelte';
 	import { enhance } from '$app/forms';
 	import { formatDate, formatEur, formatRelative } from '$lib/util/format';
 	import Save from '@lucide/svelte/icons/save';
@@ -22,6 +23,8 @@
 	import Headphones from '@lucide/svelte/icons/headphones';
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -93,6 +96,47 @@
 	const coverFullStr = $derived(coverFull(c, externalCover));
 	const coverSources = $derived(availableCoverSources(c, externalCover));
 
+	// Externe Cover-Quellen fuer die PhotoGallery — Discogs-Cache + Externes
+	// Folge-Cover (Dreimetadaten) tauchen immer in der Front-Section als
+	// read-only Karten auf (auch wenn der User schon ein eigenes Front-Foto
+	// hat), damit die Quellen sichtbar bleiben.
+	async function clearExternalCover(kind: 'discogs' | 'external') {
+		const res = await fetch(`/api/cassettes/${c.id}/external-cover?kind=${kind}`, {
+			method: 'DELETE'
+		});
+		if (!res.ok) {
+			const txt = await res.text().catch(() => 'Entfernen fehlgeschlagen.');
+			throw new Error(txt);
+		}
+		await invalidateAll();
+	}
+	const externalFrontCoversForGallery = $derived.by(() => {
+		const out: {
+			thumbUrl: string;
+			fullUrl: string;
+			source: string;
+			onClear?: () => Promise<void>;
+		}[] = [];
+		if (c.discogsCoverCachePath) {
+			const stem = c.discogsCoverCachePath.replace(/\.[^.]+$/, '');
+			out.push({
+				thumbUrl: `/uploads/${stem}.thumb.jpg`,
+				fullUrl: `/uploads/${c.discogsCoverCachePath}`,
+				source: 'Discogs',
+				onClear: () => clearExternalCover('discogs')
+			});
+		}
+		if (externalCover) {
+			out.push({
+				thumbUrl: `/uploads/${externalCover.thumb}`,
+				fullUrl: `/uploads/${externalCover.original}`,
+				source: 'Dreimetadaten',
+				onClear: () => clearExternalCover('external')
+			});
+		}
+		return out;
+	});
+
 	// Lightbox-Modal anstelle von target="_blank" (das schmiss dich aus
 	// der PWA auf Mobile).
 	let lightboxOpen = $state(false);
@@ -102,6 +146,176 @@
 	}
 	function closeLightbox() {
 		lightboxOpen = false;
+	}
+
+	// Foto-Verwalten-Sheet (geöffnet per Cover-Tap in der Ansicht-Mode)
+	let photoSheetOpen = $state(false);
+
+	// Cover-Slider — alle verfuegbaren Bilder einer Kassette in einer
+	// einheitlichen Reihenfolge:
+	//   1. Eigene Front-Fotos
+	//   2. Discogs-Cache (falls vorhanden, immer mitgezeigt)
+	//   3. Dreimetadaten / Externes Folge-Cover (falls vorhanden)
+	//   4. Eigene Rueckseite
+	//   5. Eigene Extras
+	// Die alte "Cover-Quelle"-Auswahl unten am Cover bestimmt nur noch,
+	// welches Bild als Default-Thumb in der Listenansicht erscheint —
+	// im Slider sieht man alle.
+	type SlideKind = 'own' | 'discogs' | 'external';
+	interface CoverSlide {
+		key: string;
+		kind: SlideKind;
+		role: 'front' | 'back' | 'extra';
+		thumbUrl: string;
+		fullUrl: string;
+		caption: string | null;
+	}
+
+	function discogsThumbFor(name: string): string {
+		const stem = name.replace(/\.[^.]+$/, '');
+		return `/uploads/${stem}.thumb.jpg`;
+	}
+
+	const coverSlides = $derived.by<CoverSlide[]>(() => {
+		const ownSorted = [...data.photos].sort((a, b) => {
+			const roleOrder = { front: 0, back: 1, extra: 2 } as const;
+			return (
+				roleOrder[a.role] - roleOrder[b.role] ||
+				a.sortOrder - b.sortOrder ||
+				a.createdAt.localeCompare(b.createdAt)
+			);
+		});
+		const slides: CoverSlide[] = [];
+		// 1. Eigene Front-Fotos
+		for (const p of ownSorted.filter((p) => p.role === 'front')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
+				role: 'front',
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
+			});
+		}
+		// 2. Discogs-Cache (gecacht durch ?/setCoverSource oder Pull)
+		if (c.discogsCoverCachePath) {
+			slides.push({
+				key: '__discogs__',
+				kind: 'discogs',
+				role: 'front',
+				thumbUrl: discogsThumbFor(c.discogsCoverCachePath),
+				fullUrl: `/uploads/${c.discogsCoverCachePath}`,
+				caption: 'Discogs-Cover'
+			});
+		} else if (c.discogsCoverUrl && slides.length === 0) {
+			// Discogs-URL nur als Notfall-Slide, wenn noch kein Cache und sonst nichts da.
+			slides.push({
+				key: '__discogs_url__',
+				kind: 'discogs',
+				role: 'front',
+				thumbUrl: c.discogsCoverUrl,
+				fullUrl: c.discogsCoverUrl,
+				caption: 'Discogs-Cover (nicht gecacht)'
+			});
+		}
+		// 3. Dreimetadaten / Externes Folge-Cover
+		if (externalCover) {
+			slides.push({
+				key: '__external__',
+				kind: 'external',
+				role: 'front',
+				thumbUrl: `/uploads/${externalCover.thumb}`,
+				fullUrl: `/uploads/${externalCover.original}`,
+				caption: 'Dreimetadaten-Cover'
+			});
+		}
+		// 4. Eigene Rueckseite
+		for (const p of ownSorted.filter((p) => p.role === 'back')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
+				role: 'back',
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
+			});
+		}
+		// 5. Eigene Extras
+		for (const p of ownSorted.filter((p) => p.role === 'extra')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
+				role: 'extra',
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
+			});
+		}
+		return slides;
+	});
+
+	function slideBadgeLabel(s: CoverSlide): string {
+		if (s.kind === 'discogs') return 'Discogs';
+		if (s.kind === 'external') return 'Dreimetadaten';
+		return roleLabels[s.role];
+	}
+	/** Findet den Slide-Index, der zur aktiven coverSource passt — damit der
+	 *  Slider initial das Bild zeigt, das auch in der Listen-Ansicht erscheint.
+	 *  Wenn coverSource='photo' → erstes own-front. Wenn 'discogs' → discogs.
+	 *  Wenn 'external' → dreimetadaten. Wenn 'auto' oder nichts passt → 0. */
+	function preferredSlideIdx(): number {
+		const wantOwnFront = c.coverSource === 'photo' || c.coverSource === 'auto';
+		for (let i = 0; i < coverSlides.length; i++) {
+			const s = coverSlides[i];
+			if (c.coverSource === 'discogs' && s.kind === 'discogs') return i;
+			if (c.coverSource === 'external' && s.kind === 'external') return i;
+			if (wantOwnFront && s.kind === 'own' && s.role === 'front') return i;
+		}
+		return 0;
+	}
+	let slideIdx = $state(0);
+	let lastCoverSource: string | undefined = undefined;
+	let lastSlidesKey = '';
+	$effect(() => {
+		// Range-Clamp wenn sich Fotos aendern (Upload/Delete).
+		if (slideIdx >= coverSlides.length) slideIdx = Math.max(0, coverSlides.length - 1);
+		// Springe auf den coverSource-passenden Slide, wenn sich coverSource
+		// aendert ODER beim ersten Render der Slide-Liste. Manuelles Blättern
+		// danach bleibt erhalten bis die Quelle wieder umgeschaltet wird.
+		const slidesKey = coverSlides.map((s) => s.key).join('|');
+		if (c.coverSource !== lastCoverSource || (!lastSlidesKey && slidesKey)) {
+			lastCoverSource = c.coverSource;
+			lastSlidesKey = slidesKey;
+			slideIdx = preferredSlideIdx();
+		} else if (slidesKey !== lastSlidesKey) {
+			lastSlidesKey = slidesKey;
+		}
+	});
+	function nextSlide(delta: number) {
+		const n = coverSlides.length;
+		if (n <= 1) return;
+		slideIdx = (slideIdx + delta + n) % n;
+	}
+	const roleLabels = { front: 'Front', back: 'Rückseite', extra: 'Extra' } as const;
+
+	// Swipe-Erkennung fuer Touch.
+	let touchStartX = 0;
+	let touchStartY = 0;
+	function onCoverTouchStart(e: TouchEvent) {
+		const t = e.touches[0];
+		if (!t) return;
+		touchStartX = t.clientX;
+		touchStartY = t.clientY;
+	}
+	function onCoverTouchEnd(e: TouchEvent) {
+		const t = e.changedTouches[0];
+		if (!t) return;
+		const dx = t.clientX - touchStartX;
+		const dy = t.clientY - touchStartY;
+		// Nur horizontale Swipes mit ausreichendem Hub auswerten.
+		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+			nextSlide(dx > 0 ? -1 : 1);
+		}
 	}
 
 	// Klappentext-Editor State
@@ -159,20 +373,19 @@
 				bind:formState
 				fieldErrors={form?.fieldErrors}
 				onSearchDiscogs={() => (showSearch = true)}
+				showPhoto={false}
 			/>
 
-			{#if c.coverFotoPath}
-				<label
-					class="mt-3 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm dark:border-stone-800 dark:bg-stone-900"
-				>
-					<input
-						type="checkbox"
-						name="removePhoto"
-						class="h-4 w-4 rounded border-stone-300 text-brand-500 focus:ring-brand-500"
-					/>
-					Foto entfernen
-				</label>
-			{/if}
+			<div
+				class="mt-4 rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900"
+			>
+				<h2 class="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">Fotos</h2>
+				<PhotoGallery
+					cassetteId={c.id}
+					photos={data.photos}
+					externalFrontCovers={externalFrontCoversForGallery}
+				/>
+			</div>
 
 			{#if form?.error}
 				<p
@@ -212,21 +425,95 @@
 			<div
 				class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
 			>
-				<div class="aspect-square bg-stone-100 dark:bg-stone-800">
-					{#if coverFullStr}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					class="relative aspect-square bg-stone-100 dark:bg-stone-800"
+					ontouchstart={onCoverTouchStart}
+					ontouchend={onCoverTouchEnd}
+				>
+					{#if coverSlides.length > 0}
+						{@const cur = coverSlides[Math.min(slideIdx, coverSlides.length - 1)]}
 						<button
 							type="button"
-							onclick={openLightbox}
+							onclick={() => (photoSheetOpen = true)}
 							class="block h-full w-full"
-							aria-label="Cover vergrößern"
+							aria-label="Fotos verwalten"
+						>
+							<img
+								src={cur.thumbUrl}
+								alt={cur.caption ?? `${roleLabels[cur.role]} – ${c.titel}`}
+								class="h-full w-full object-cover"
+							/>
+						</button>
+					{:else if coverFullStr}
+						<button
+							type="button"
+							onclick={() => (photoSheetOpen = true)}
+							class="block h-full w-full"
+							aria-label="Fotos verwalten"
 						>
 							<img src={coverThumbStr} alt={c.titel} class="h-full w-full object-cover" />
 						</button>
 					{:else}
-						<div class="flex h-full items-center justify-center text-stone-400 dark:text-stone-600">
+						<button
+							type="button"
+							onclick={() => (photoSheetOpen = true)}
+							class="flex h-full w-full items-center justify-center text-stone-400 dark:text-stone-600"
+							aria-label="Fotos hinzufügen"
+						>
 							<ImageIcon size={48} />
+						</button>
+					{/if}
+
+					{#if coverSlides.length > 1}
+						<button
+							type="button"
+							onclick={(e) => {
+								e.stopPropagation();
+								nextSlide(-1);
+							}}
+							aria-label="Vorheriges Bild"
+							class="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
+						>
+							<ChevronLeft size={20} />
+						</button>
+						<button
+							type="button"
+							onclick={(e) => {
+								e.stopPropagation();
+								nextSlide(1);
+							}}
+							aria-label="Nächstes Bild"
+							class="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
+						>
+							<ChevronRight size={20} />
+						</button>
+						<div
+							class="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
+						>
+							{#each coverSlides as _, i (i)}
+								<span
+									class="h-1.5 rounded-full transition-all
+										{i === slideIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}"
+								></span>
+							{/each}
+						</div>
+						{@const curBadge = coverSlides[Math.min(slideIdx, coverSlides.length - 1)]}
+						<div
+							class="pointer-events-none absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm"
+						>
+							{slideBadgeLabel(curBadge)}
 						</div>
 					{/if}
+
+					<button
+						type="button"
+						onclick={() => (photoSheetOpen = true)}
+						class="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/75"
+					>
+						<Pencil size={12} />
+						Fotos
+					</button>
 				</div>
 
 				{#if coverSources.length > 0 || data.dreiSupported}
@@ -287,48 +574,6 @@
 									</button>
 								</form>
 							{/each}
-							<form
-								method="POST"
-								action="?/uploadCoverPhoto"
-								enctype="multipart/form-data"
-								use:enhance={() => {
-									return ({ update }) => update();
-								}}
-							>
-								<label
-									class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
-								>
-									+ Foto hochladen
-									<input
-										type="file"
-										name="photo"
-										accept="image/*"
-										capture="environment"
-										onchange={(e) => {
-											const t = e.currentTarget as HTMLInputElement;
-											if (t.files && t.files.length > 0) t.form?.requestSubmit();
-										}}
-										class="hidden"
-									/>
-								</label>
-							</form>
-							{#if c.coverFotoPath}
-								<form
-									method="POST"
-									action="?/removeCoverPhoto"
-									use:enhance={() => {
-										return ({ update }) => update();
-									}}
-								>
-									<button
-										type="submit"
-										class="rounded-full px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
-										title="Eigenes Foto entfernen"
-									>
-										Foto entfernen
-									</button>
-								</form>
-							{/if}
 							{#if data.dreiSupported && !data.folgeCover}
 								<form
 									method="POST"
@@ -948,5 +1193,49 @@
 			class="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
 			onclick={(e) => e.stopPropagation()}
 		/>
+	</div>
+{/if}
+
+{#if photoSheetOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center"
+		onclick={() => (photoSheetOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Fotos verwalten"
+		tabindex="-1"
+	>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-stone-900 sm:max-w-2xl sm:rounded-2xl"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<header
+				class="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-700"
+			>
+				<h2 class="text-sm font-semibold text-stone-800 dark:text-stone-100">Fotos verwalten</h2>
+				<button
+					type="button"
+					onclick={() => (photoSheetOpen = false)}
+					class="-mr-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+					aria-label="Schließen"
+				>
+					<X size={18} />
+				</button>
+			</header>
+			<div
+				class="overflow-y-auto p-4"
+				style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))"
+			>
+				<PhotoGallery
+					cassetteId={c.id}
+					photos={data.photos}
+					externalFrontCovers={externalFrontCoversForGallery}
+				/>
+			</div>
+		</div>
 	</div>
 {/if}

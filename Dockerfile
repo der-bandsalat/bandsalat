@@ -11,7 +11,8 @@ RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		python3 build-essential ca-certificates \
 	&& rm -rf /var/lib/apt/lists/* \
-	&& corepack enable
+	&& corepack enable \
+	&& corepack prepare pnpm@11.1.3 --activate
 
 WORKDIR /app
 

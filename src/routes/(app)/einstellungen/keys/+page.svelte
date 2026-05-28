@@ -165,7 +165,9 @@
 						name="discogs_token"
 						autocomplete="off"
 						spellcheck="false"
-						placeholder="ESBZoFibfb…"
+						placeholder={data.states.discogsToken.source !== 'missing'
+							? `aktuell gesetzt (${data.states.discogsToken.hint ?? '…'}) — leer lassen zum behalten`
+							: 'ESBZoFibfb…'}
 						class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 pr-10 font-mono text-xs dark:border-stone-700 dark:bg-stone-950"
 					/>
 					<button
@@ -271,7 +273,9 @@
 						name="anthropic_key"
 						autocomplete="off"
 						spellcheck="false"
-						placeholder="sk-ant-api03-…"
+						placeholder={data.states.anthropicKey.source !== 'missing'
+							? `aktuell gesetzt (${data.states.anthropicKey.hint ?? '…'}) — leer lassen zum behalten`
+							: 'sk-ant-api03-…'}
 						class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 pr-10 font-mono text-xs dark:border-stone-700 dark:bg-stone-950"
 					/>
 					<button
