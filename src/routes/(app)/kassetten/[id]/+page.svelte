@@ -94,6 +94,26 @@
 	const coverFullStr = $derived(coverFull(c, externalCover));
 	const coverSources = $derived(availableCoverSources(c, externalCover));
 
+	// Fallback-Cover für die PhotoGallery: wenn die Kassette gerade ein
+	// Cover anzeigt, das aber NICHT aus den eigenen Fotos kommt (Discogs-Cache,
+	// externes Folge-Cover oder Discogs-URL), zeigen wir das als read-only
+	// Vorschau in der Front-Cover-Sektion.
+	const hasOwnFrontPhoto = $derived(data.photos.some((p) => p.role === 'front'));
+	const fallbackCoverForGallery = $derived(
+		!hasOwnFrontPhoto && coverThumbStr && coverFullStr
+			? {
+					thumbUrl: coverThumbStr,
+					fullUrl: coverFullStr,
+					source:
+						c.coverSource === 'discogs'
+							? 'Discogs'
+							: c.coverSource === 'external'
+								? 'Externe Quelle'
+								: 'Aktuell angezeigt'
+				}
+			: null
+	);
+
 	// Lightbox-Modal anstelle von target="_blank" (das schmiss dich aus
 	// der PWA auf Mobile).
 	let lightboxOpen = $state(false);
@@ -170,7 +190,11 @@
 				class="mt-4 rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900"
 			>
 				<h2 class="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">Fotos</h2>
-				<PhotoGallery cassetteId={c.id} photos={data.photos} />
+				<PhotoGallery
+					cassetteId={c.id}
+					photos={data.photos}
+					fallbackCover={fallbackCoverForGallery}
+				/>
 			</div>
 
 			{#if form?.error}
@@ -997,7 +1021,11 @@
 				class="overflow-y-auto p-4"
 				style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))"
 			>
-				<PhotoGallery cassetteId={c.id} photos={data.photos} />
+				<PhotoGallery
+					cassetteId={c.id}
+					photos={data.photos}
+					fallbackCover={fallbackCoverForGallery}
+				/>
 			</div>
 		</div>
 	</div>

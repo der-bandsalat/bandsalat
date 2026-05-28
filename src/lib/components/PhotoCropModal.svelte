@@ -37,27 +37,47 @@
 		if (!imgUrl || !containerEl) return;
 		let cancelled = false;
 		(async () => {
-			// dist/cropper.esm.js statt package default (raw) — letzteres registriert
-			// die <cropper-canvas>/<cropper-image>/... Web-Components nicht und das
-			// Crop-UI bleibt unsichtbar.
-			const { default: Cropper } = await import('cropperjs/dist/cropper.esm.js');
-			if (cancelled) return;
-			// Frisches <img> in container injizieren — cropperjs ersetzt es durch
-			// das <cropper-canvas>-Konstrukt.
-			containerEl.innerHTML = '';
-			const img = document.createElement('img');
-			img.src = imgUrl;
-			img.alt = 'Foto-Vorschau';
-			img.style.maxWidth = '100%';
-			containerEl.appendChild(img);
-			await new Promise<void>((res) => {
-				if (img.complete) res();
-				else img.onload = () => res();
-			});
-			if (cancelled) return;
-			cropper = new Cropper(img, {});
-			await tick();
-			applyRatio(ratio);
+			try {
+				// dist/cropper.esm.js statt package default (raw) — letzteres
+				// registriert die <cropper-canvas>/<cropper-image>/... Web-Components
+				// nicht und das Crop-UI bleibt unsichtbar.
+				const { default: Cropper } = await import('cropperjs/dist/cropper.esm.js');
+				if (cancelled) return;
+				// Frisches <img> in Container injizieren — cropperjs ersetzt es
+				// durch das <cropper-canvas>-Konstrukt.
+				containerEl.innerHTML = '';
+				const img = document.createElement('img');
+				img.alt = 'Foto-Vorschau';
+				img.style.display = 'block';
+				img.style.maxWidth = '100%';
+				img.style.maxHeight = '100%';
+				img.src = imgUrl;
+				containerEl.appendChild(img);
+				await new Promise<void>((res, rej) => {
+					if (img.complete && img.naturalWidth > 0) res();
+					else {
+						img.onload = () => res();
+						img.onerror = () => rej(new Error('Bild konnte nicht geladen werden.'));
+					}
+				});
+				if (cancelled) return;
+				cropper = new Cropper(img, {});
+				// cropper-canvas hat per Default nur min-height 100px → explizit
+				// auf 100% setzen, damit das Bild den ganzen Modal-Body nutzt.
+				const cc = cropper.getCropperCanvas() as HTMLElement | null;
+				if (cc) {
+					cc.style.display = 'block';
+					cc.style.width = '100%';
+					cc.style.height = '100%';
+				}
+				await tick();
+				applyRatio(ratio);
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[PhotoCropModal] init failed', err);
+					errorMsg = err instanceof Error ? err.message : 'Crop-Editor konnte nicht starten.';
+				}
+			}
 		})();
 		return () => {
 			cancelled = true;
@@ -159,8 +179,8 @@
 
 		<div
 			bind:this={containerEl}
-			class="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black p-2"
-			style="touch-action: none"
+			class="relative flex flex-1 items-stretch justify-stretch overflow-hidden bg-black"
+			style="touch-action: none; min-height: 50dvh"
 		></div>
 
 		{#if errorMsg}

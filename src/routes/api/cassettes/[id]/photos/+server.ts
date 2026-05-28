@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { ensureEditor } from '$lib/server/auth/guard';
-import { getCassette } from '$lib/server/db/cassettes';
+import { getCassette, updateCassette } from '$lib/server/db/cassettes';
 import { addCassettePhoto, listCassettePhotos, reorderRole } from '$lib/server/db/cassette-photos';
 import { CASSETTE_PHOTO_ROLES, type CassettePhotoRole } from '$lib/server/db/schema';
 import { savePhoto } from '$lib/server/storage/photos';
@@ -42,6 +42,12 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 		thumbPath: saved.thumb,
 		caption: typeof caption === 'string' && caption ? caption : null
 	});
+	// Wenn das erste eigene Front-Foto entsteht, Cover-Quelle auf 'photo'
+	// setzen — sonst bliebe das Discogs-/External-Cover sichtbar und das
+	// gerade hochgeladene Foto unsichtbar.
+	if (role === 'front' && cas.coverSource !== 'photo') {
+		updateCassette(cas.id, { coverSource: 'photo' });
+	}
 	return json({ id, path: saved.original, thumbPath: saved.thumb, role }, { status: 201 });
 };
 

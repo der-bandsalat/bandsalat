@@ -7,6 +7,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import Star from '@lucide/svelte/icons/star';
 	import Loader from '@lucide/svelte/icons/loader-2';
+	import Crop from '@lucide/svelte/icons/crop';
 	import PhotoCropModal from './PhotoCropModal.svelte';
 
 	export type PhotoRole = 'front' | 'back' | 'extra';
@@ -23,16 +24,26 @@
 	interface Props {
 		cassetteId: string;
 		photos: PhotoItem[];
+		/** Aktuell angezeigtes Cover, falls noch kein eigenes Front-Foto vorhanden ist
+		 *  (z.B. Discogs-Cache oder externes Folge-Cover). Wird in der Front-Section
+		 *  als read-only "Aktuell angezeigt"-Karte gerendert mit Hochlade-Option. */
+		fallbackCover?: { thumbUrl: string; fullUrl: string; source: string } | null;
 		uploadsBase?: string;
 		disabled?: boolean;
 	}
 
-	let { cassetteId, photos, uploadsBase = '/uploads/', disabled = false }: Props = $props();
+	let {
+		cassetteId,
+		photos,
+		fallbackCover = null,
+		uploadsBase = '/uploads/',
+		disabled = false
+	}: Props = $props();
 
 	let uploading = $state<Record<PhotoRole, boolean>>({ front: false, back: false, extra: false });
 	let busyId = $state<string | null>(null);
 	let errorMsg = $state<string | null>(null);
-	let cropTarget = $state<{ file: File; role: PhotoRole } | null>(null);
+	let cropTarget = $state<{ file: File; role: PhotoRole; replacePhotoId?: string } | null>(null);
 
 	const byRole = $derived.by(() => {
 		const out: Record<PhotoRole, PhotoItem[]> = { front: [], back: [], extra: [] };
@@ -83,7 +94,40 @@
 		const target = cropTarget;
 		if (!target) return;
 		cropTarget = null;
-		await uploadFile(croppedFile, target.role);
+		if (target.replacePhotoId) {
+			// Erst neuen Crop hochladen, dann altes Foto löschen — Reihenfolge
+			// hilft, damit die Front-Cover-Synchronisation während des Übergangs
+			// nicht kurz auf "kein Foto" fällt.
+			await uploadFile(croppedFile, target.role);
+			try {
+				await fetch(`/api/cassettes/${cassetteId}/photos/${target.replacePhotoId}`, {
+					method: 'DELETE'
+				});
+				await invalidateAll();
+			} catch (err) {
+				errorMsg = err instanceof Error ? err.message : 'Altes Foto konnte nicht entfernt werden.';
+			}
+		} else {
+			await uploadFile(croppedFile, target.role);
+		}
+	}
+
+	async function editPhoto(photo: PhotoItem) {
+		errorMsg = null;
+		busyId = photo.id;
+		try {
+			const res = await fetch(urlFor(photo.path));
+			if (!res.ok) throw new Error('Original konnte nicht geladen werden.');
+			const blob = await res.blob();
+			const file = new File([blob], `edit-${photo.id}.jpg`, {
+				type: blob.type || 'image/jpeg'
+			});
+			cropTarget = { file, role: photo.role, replacePhotoId: photo.id };
+		} catch (err) {
+			errorMsg = err instanceof Error ? err.message : 'Bearbeiten fehlgeschlagen.';
+		} finally {
+			busyId = null;
+		}
 	}
 
 	async function deletePhoto(photo: PhotoItem) {
@@ -250,19 +294,50 @@
 									</button>
 								{/if}
 							</div>
-							<button
-								type="button"
-								title="Löschen"
-								aria-label="Foto löschen"
-								onclick={() => deletePhoto(photo)}
-								disabled={disabled || busyId !== null}
-								class="rounded bg-red-500/90 p-1.5 text-white hover:bg-red-500 disabled:opacity-50"
-							>
-								<Trash2 size={14} />
-							</button>
+							<div class="flex gap-1">
+								<button
+									type="button"
+									title="Zuschneiden"
+									aria-label="Foto zuschneiden"
+									onclick={() => editPhoto(photo)}
+									disabled={disabled || busyId !== null}
+									class="rounded bg-white/90 p-1.5 text-stone-700 hover:bg-white disabled:opacity-50"
+								>
+									<Crop size={14} />
+								</button>
+								<button
+									type="button"
+									title="Löschen"
+									aria-label="Foto löschen"
+									onclick={() => deletePhoto(photo)}
+									disabled={disabled || busyId !== null}
+									class="rounded bg-red-500/90 p-1.5 text-white hover:bg-red-500 disabled:opacity-50"
+								>
+									<Trash2 size={14} />
+								</button>
+							</div>
 						</div>
 					</figure>
 				{/each}
+
+				{#if role === 'front' && items.length === 0 && fallbackCover}
+					<figure
+						class="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 opacity-80 dark:border-stone-700 dark:bg-stone-800"
+						title="Aktuell angezeigtes Cover (kein eigenes Foto)"
+					>
+						<img
+							src={fallbackCover.thumbUrl}
+							alt="Aktuell angezeigtes Cover"
+							class="h-full w-full object-cover"
+							loading="lazy"
+						/>
+						<div
+							class="absolute inset-x-0 top-0 bg-black/60 px-2 py-1 text-center text-[10px] font-medium uppercase tracking-wide text-white"
+						>
+							{fallbackCover.source}
+						</div>
+					</figure>
+				{/if}
 
 				{#if !single || items.length === 0}
 					<label
