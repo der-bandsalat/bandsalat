@@ -25,8 +25,7 @@ export function createSessionToken(
 	options?: { expiresAt?: Date }
 ): { token: string; expiresAt: Date } {
 	const expiresAt =
-		options?.expiresAt ??
-		new Date(Date.now() + env().SESSION_DAYS * 24 * 60 * 60 * 1000);
+		options?.expiresAt ?? new Date(Date.now() + env().SESSION_DAYS * 24 * 60 * 60 * 1000);
 	const exp = expiresAt.getTime().toString(10);
 	const nonce = randomBytes(16).toString('base64url');
 	const payload = `${userId}.${exp}.${nonce}`;

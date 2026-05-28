@@ -253,11 +253,9 @@ if (discogsToken) {
 }
 
 console.log('[seed] Erzeuge Tarball…');
-execFileSync(
-	'tar',
-	['-czf', resolve(OUT_DIR, '..', TARBALL), '-C', OUT_DIR, 'data'],
-	{ stdio: 'inherit' }
-);
+execFileSync('tar', ['-czf', resolve(OUT_DIR, '..', TARBALL), '-C', OUT_DIR, 'data'], {
+	stdio: 'inherit'
+});
 
 const stat = execFileSync('du', ['-sh', resolve(OUT_DIR, '..', TARBALL)], { encoding: 'utf8' });
 console.log(`[seed] Fertig: ${stat.trim()}`);

@@ -29,10 +29,7 @@
 <!-- Banner ist fixed top-0; sticky AppHeader liest --demo-banner-h, damit er
      direkt drunter andockt statt verdeckt zu werden. Mobile wickeln die CTAs
      in eine zweite Zeile, daher dort mehr Höhe. -->
-<div
-	class="min-h-screen pb-24 demo-shell"
-	class:demo-active={data.demo}
->
+<div class="min-h-screen pb-24 demo-shell" class:demo-active={data.demo}>
 	{@render children()}
 </div>
 <AppNav />
