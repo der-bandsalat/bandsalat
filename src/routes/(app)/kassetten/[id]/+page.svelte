@@ -259,10 +259,37 @@
 		if (s.kind === 'external') return 'Dreimetadaten';
 		return roleLabels[s.role];
 	}
+	/** Findet den Slide-Index, der zur aktiven coverSource passt — damit der
+	 *  Slider initial das Bild zeigt, das auch in der Listen-Ansicht erscheint.
+	 *  Wenn coverSource='photo' → erstes own-front. Wenn 'discogs' → discogs.
+	 *  Wenn 'external' → dreimetadaten. Wenn 'auto' oder nichts passt → 0. */
+	function preferredSlideIdx(): number {
+		const wantOwnFront = c.coverSource === 'photo' || c.coverSource === 'auto';
+		for (let i = 0; i < coverSlides.length; i++) {
+			const s = coverSlides[i];
+			if (c.coverSource === 'discogs' && s.kind === 'discogs') return i;
+			if (c.coverSource === 'external' && s.kind === 'external') return i;
+			if (wantOwnFront && s.kind === 'own' && s.role === 'front') return i;
+		}
+		return 0;
+	}
 	let slideIdx = $state(0);
+	let lastCoverSource: string | undefined = undefined;
+	let lastSlidesKey = '';
 	$effect(() => {
-		// Wenn sich die Fotos-Liste aendert (Upload/Delete), Index in Range halten.
+		// Range-Clamp wenn sich Fotos aendern (Upload/Delete).
 		if (slideIdx >= coverSlides.length) slideIdx = Math.max(0, coverSlides.length - 1);
+		// Springe auf den coverSource-passenden Slide, wenn sich coverSource
+		// aendert ODER beim ersten Render der Slide-Liste. Manuelles Blättern
+		// danach bleibt erhalten bis die Quelle wieder umgeschaltet wird.
+		const slidesKey = coverSlides.map((s) => s.key).join('|');
+		if (c.coverSource !== lastCoverSource || (!lastSlidesKey && slidesKey)) {
+			lastCoverSource = c.coverSource;
+			lastSlidesKey = slidesKey;
+			slideIdx = preferredSlideIdx();
+		} else if (slidesKey !== lastSlidesKey) {
+			lastSlidesKey = slidesKey;
+		}
 	});
 	function nextSlide(delta: number) {
 		const n = coverSlides.length;
