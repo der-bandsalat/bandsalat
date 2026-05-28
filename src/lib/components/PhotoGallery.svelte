@@ -21,13 +21,23 @@
 		createdAt: string;
 	}
 
+	export interface ExternalFrontCover {
+		thumbUrl: string;
+		fullUrl: string;
+		/** Anzeige-Badge, z.B. 'Discogs', 'Dreimetadaten', 'Aktuell'. */
+		source: string;
+		/** Optionaler Callback fuer X-Button auf der Karte. Wenn nicht gesetzt,
+		 *  ist die Karte rein read-only ohne Aktions-Chrome. */
+		onClear?: () => Promise<void> | void;
+	}
+
 	interface Props {
 		cassetteId: string;
 		photos: PhotoItem[];
-		/** Aktuell angezeigtes Cover, falls noch kein eigenes Front-Foto vorhanden ist
-		 *  (z.B. Discogs-Cache oder externes Folge-Cover). Wird in der Front-Section
-		 *  als read-only "Aktuell angezeigt"-Karte gerendert mit Hochlade-Option. */
-		fallbackCover?: { thumbUrl: string; fullUrl: string; source: string } | null;
+		/** Externe Cover-Quellen (Discogs-Cache, Dreimetadaten), die immer in der
+		 *  Front-Section als read-only Karten erscheinen — egal ob eigene Front-Fotos
+		 *  existieren. So bleiben die Quellen sichtbar und auditierbar. */
+		externalFrontCovers?: ExternalFrontCover[];
 		uploadsBase?: string;
 		disabled?: boolean;
 	}
@@ -35,7 +45,7 @@
 	let {
 		cassetteId,
 		photos,
-		fallbackCover = null,
+		externalFrontCovers = [],
 		uploadsBase = '/uploads/',
 		disabled = false
 	}: Props = $props();
@@ -166,12 +176,70 @@
 		}
 	}
 
-	let lightboxIndex = $state<number | null>(null);
-	const flatPhotos = $derived([...byRole.front, ...byRole.back, ...byRole.extra]);
+	const roleLabel: Record<PhotoRole, string> = {
+		front: 'Front-Cover',
+		back: 'Rückseite',
+		extra: 'Weitere'
+	};
 
-	function openLightbox(photo: PhotoItem) {
-		const idx = flatPhotos.findIndex((p) => p.id === photo.id);
+	interface LightboxItem {
+		key: string;
+		fullUrl: string;
+		label: string;
+	}
+	let lightboxIndex = $state<number | null>(null);
+	const lightboxItems = $derived.by<LightboxItem[]>(() => {
+		const out: LightboxItem[] = [];
+		// Reihenfolge spiegelt das Gallery-Layout: own front, dann externals,
+		// dann own back, own extra.
+		for (const p of byRole.front) {
+			out.push({
+				key: `own:${p.id}`,
+				fullUrl: urlFor(p.path),
+				label: p.caption ?? roleLabel.front
+			});
+		}
+		for (const ext of externalFrontCovers) {
+			out.push({
+				key: `ext:${ext.fullUrl}`,
+				fullUrl: ext.fullUrl,
+				label: ext.source
+			});
+		}
+		for (const p of [...byRole.back, ...byRole.extra]) {
+			out.push({
+				key: `own:${p.id}`,
+				fullUrl: urlFor(p.path),
+				label: p.caption ?? roleLabel[p.role]
+			});
+		}
+		return out;
+	});
+
+	function openLightboxFor(key: string) {
+		const idx = lightboxItems.findIndex((i) => i.key === key);
 		if (idx >= 0) lightboxIndex = idx;
+	}
+	function openLightbox(photo: PhotoItem) {
+		openLightboxFor(`own:${photo.id}`);
+	}
+	function openLightboxExternal(ext: ExternalFrontCover) {
+		openLightboxFor(`ext:${ext.fullUrl}`);
+	}
+
+	let clearingExternal = $state<string | null>(null);
+	async function handleClearExternal(ext: ExternalFrontCover) {
+		if (!ext.onClear) return;
+		if (!confirm(`${ext.source}-Cover wirklich entfernen?`)) return;
+		clearingExternal = ext.fullUrl;
+		errorMsg = null;
+		try {
+			await ext.onClear();
+		} catch (err) {
+			errorMsg = err instanceof Error ? err.message : 'Entfernen fehlgeschlagen.';
+		} finally {
+			clearingExternal = null;
+		}
 	}
 
 	function closeLightbox() {
@@ -180,7 +248,7 @@
 
 	function nextLightbox(delta: number) {
 		if (lightboxIndex === null) return;
-		const n = flatPhotos.length;
+		const n = lightboxItems.length;
 		if (n === 0) {
 			lightboxIndex = null;
 			return;
@@ -195,11 +263,6 @@
 		else if (e.key === 'ArrowLeft') nextLightbox(-1);
 	}
 
-	const roleLabel: Record<PhotoRole, string> = {
-		front: 'Front-Cover',
-		back: 'Rückseite',
-		extra: 'Weitere'
-	};
 	const roleHint: Record<PhotoRole, string> = {
 		front: 'Hauptbild der Kassette',
 		back: 'Inlay-Rückseite oder Trackliste',
@@ -320,23 +383,49 @@
 					</figure>
 				{/each}
 
-				{#if role === 'front' && items.length === 0 && fallbackCover}
-					<figure
-						class="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 opacity-80 dark:border-stone-700 dark:bg-stone-800"
-						title="Aktuell angezeigtes Cover (kein eigenes Foto)"
-					>
-						<img
-							src={fallbackCover.thumbUrl}
-							alt="Aktuell angezeigtes Cover"
-							class="h-full w-full object-cover"
-							loading="lazy"
-						/>
-						<div
-							class="absolute inset-x-0 top-0 bg-black/60 px-2 py-1 text-center text-[10px] font-medium uppercase tracking-wide text-white"
+				{#if role === 'front' && externalFrontCovers.length > 0}
+					{#each externalFrontCovers as ext, i (ext.thumbUrl + i)}
+						<figure
+							class="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
+							title="{ext.source}-Cover"
 						>
-							{fallbackCover.source}
-						</div>
-					</figure>
+							<button
+								type="button"
+								onclick={() => openLightboxExternal(ext)}
+								class="block h-full w-full"
+								aria-label="{ext.source}-Cover vergrößern"
+							>
+								<img
+									src={ext.thumbUrl}
+									alt="{ext.source}-Cover"
+									class="h-full w-full object-cover"
+									loading="lazy"
+								/>
+							</button>
+							<div
+								class="pointer-events-none absolute inset-x-0 top-0 bg-black/60 px-2 py-1 text-center text-[10px] font-medium uppercase tracking-wide text-white"
+							>
+								{ext.source}
+							</div>
+							{#if clearingExternal === ext.fullUrl}
+								<div class="absolute inset-0 flex items-center justify-center bg-black/40">
+									<Loader size={20} class="animate-spin text-white" />
+								</div>
+							{/if}
+							{#if ext.onClear}
+								<button
+									type="button"
+									title="{ext.source}-Cover entfernen"
+									aria-label="{ext.source}-Cover entfernen"
+									onclick={() => handleClearExternal(ext)}
+									disabled={clearingExternal !== null}
+									class="absolute bottom-1.5 right-1.5 rounded bg-red-500/90 p-1.5 text-white hover:bg-red-500 disabled:opacity-50"
+								>
+									<Trash2 size={14} />
+								</button>
+							{/if}
+						</figure>
+					{/each}
 				{/if}
 
 				{#if !single || items.length === 0}
@@ -374,7 +463,7 @@
 	{/if}
 
 	{#if lightboxIndex !== null}
-		{@const current = flatPhotos[lightboxIndex]}
+		{@const current = lightboxItems[lightboxIndex]}
 		<div
 			class="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
 			role="dialog"
@@ -390,11 +479,11 @@
 			>
 				<X size={22} />
 			</button>
-			{#if flatPhotos.length > 1}
+			{#if lightboxItems.length > 1}
 				<button
 					type="button"
 					onclick={() => nextLightbox(-1)}
-					aria-label="Vorheriges Foto"
+					aria-label="Vorheriges Bild"
 					class="absolute left-2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
 				>
 					‹
@@ -402,7 +491,7 @@
 				<button
 					type="button"
 					onclick={() => nextLightbox(1)}
-					aria-label="Nächstes Foto"
+					aria-label="Nächstes Bild"
 					class="absolute right-2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
 				>
 					›
@@ -410,15 +499,15 @@
 			{/if}
 			{#if current}
 				<img
-					src={urlFor(current.path)}
-					alt={current.caption ?? roleLabel[current.role]}
+					src={current.fullUrl}
+					alt={current.label}
 					class="max-h-[100dvh] max-w-full object-contain"
 				/>
 				<div
 					class="absolute inset-x-0 bottom-0 px-4 py-3 text-center text-xs text-white/70"
 					style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))"
 				>
-					{roleLabel[current.role]} · {lightboxIndex + 1} / {flatPhotos.length}
+					{current.label} · {lightboxIndex + 1} / {lightboxItems.length}
 				</div>
 			{/if}
 		</div>

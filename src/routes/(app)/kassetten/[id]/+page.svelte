@@ -96,25 +96,46 @@
 	const coverFullStr = $derived(coverFull(c, externalCover));
 	const coverSources = $derived(availableCoverSources(c, externalCover));
 
-	// Fallback-Cover für die PhotoGallery: wenn die Kassette gerade ein
-	// Cover anzeigt, das aber NICHT aus den eigenen Fotos kommt (Discogs-Cache,
-	// externes Folge-Cover oder Discogs-URL), zeigen wir das als read-only
-	// Vorschau in der Front-Cover-Sektion.
-	const hasOwnFrontPhoto = $derived(data.photos.some((p) => p.role === 'front'));
-	const fallbackCoverForGallery = $derived(
-		!hasOwnFrontPhoto && coverThumbStr && coverFullStr
-			? {
-					thumbUrl: coverThumbStr,
-					fullUrl: coverFullStr,
-					source:
-						c.coverSource === 'discogs'
-							? 'Discogs'
-							: c.coverSource === 'external'
-								? 'Externe Quelle'
-								: 'Aktuell angezeigt'
-				}
-			: null
-	);
+	// Externe Cover-Quellen fuer die PhotoGallery — Discogs-Cache + Externes
+	// Folge-Cover (Dreimetadaten) tauchen immer in der Front-Section als
+	// read-only Karten auf (auch wenn der User schon ein eigenes Front-Foto
+	// hat), damit die Quellen sichtbar bleiben.
+	async function clearExternalCover(kind: 'discogs' | 'external') {
+		const res = await fetch(`/api/cassettes/${c.id}/external-cover?kind=${kind}`, {
+			method: 'DELETE'
+		});
+		if (!res.ok) {
+			const txt = await res.text().catch(() => 'Entfernen fehlgeschlagen.');
+			throw new Error(txt);
+		}
+		await invalidateAll();
+	}
+	const externalFrontCoversForGallery = $derived.by(() => {
+		const out: {
+			thumbUrl: string;
+			fullUrl: string;
+			source: string;
+			onClear?: () => Promise<void>;
+		}[] = [];
+		if (c.discogsCoverCachePath) {
+			const stem = c.discogsCoverCachePath.replace(/\.[^.]+$/, '');
+			out.push({
+				thumbUrl: `/uploads/${stem}.thumb.jpg`,
+				fullUrl: `/uploads/${c.discogsCoverCachePath}`,
+				source: 'Discogs',
+				onClear: () => clearExternalCover('discogs')
+			});
+		}
+		if (externalCover) {
+			out.push({
+				thumbUrl: `/uploads/${externalCover.thumb}`,
+				fullUrl: `/uploads/${externalCover.original}`,
+				source: 'Dreimetadaten',
+				onClear: () => clearExternalCover('external')
+			});
+		}
+		return out;
+	});
 
 	// Lightbox-Modal anstelle von target="_blank" (das schmiss dich aus
 	// der PWA auf Mobile).
@@ -130,20 +151,31 @@
 	// Foto-Verwalten-Sheet (geöffnet per Cover-Tap in der Ansicht-Mode)
 	let photoSheetOpen = $state(false);
 
-	// Cover-Slider — durch eigene Fotos (front → back → extras) blaettern.
-	// Wenn KEIN eigenes Front-Foto vorhanden, aber ein Cover aus Discogs /
-	// External /Discogs-URL angezeigt wird, kommt das als virtueller
-	// "Front"-Slide an die erste Position. So bleibt das Standard-Cover
-	// sichtbar, sobald der User Rueckseite/Extras hochlaedt — sonst waere
-	// das Discogs-Cover bei vorhandenen back/extras verschluckt worden.
+	// Cover-Slider — alle verfuegbaren Bilder einer Kassette in einer
+	// einheitlichen Reihenfolge:
+	//   1. Eigene Front-Fotos
+	//   2. Discogs-Cache (falls vorhanden, immer mitgezeigt)
+	//   3. Dreimetadaten / Externes Folge-Cover (falls vorhanden)
+	//   4. Eigene Rueckseite
+	//   5. Eigene Extras
+	// Die alte "Cover-Quelle"-Auswahl unten am Cover bestimmt nur noch,
+	// welches Bild als Default-Thumb in der Listenansicht erscheint —
+	// im Slider sieht man alle.
+	type SlideKind = 'own' | 'discogs' | 'external';
 	interface CoverSlide {
 		key: string;
+		kind: SlideKind;
 		role: 'front' | 'back' | 'extra';
 		thumbUrl: string;
 		fullUrl: string;
 		caption: string | null;
-		isFallback: boolean;
 	}
+
+	function discogsThumbFor(name: string): string {
+		const stem = name.replace(/\.[^.]+$/, '');
+		return `/uploads/${stem}.thumb.jpg`;
+	}
+
 	const coverSlides = $derived.by<CoverSlide[]>(() => {
 		const ownSorted = [...data.photos].sort((a, b) => {
 			const roleOrder = { front: 0, back: 1, extra: 2 } as const;
@@ -153,27 +185,80 @@
 				a.createdAt.localeCompare(b.createdAt)
 			);
 		});
-		const ownMapped: CoverSlide[] = ownSorted.map((p) => ({
-			key: p.id,
-			role: p.role,
-			thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
-			fullUrl: `/uploads/${p.path}`,
-			caption: p.caption,
-			isFallback: false
-		}));
-		const hasOwnFront = ownMapped.some((s) => s.role === 'front');
-		if (!hasOwnFront && coverThumbStr && coverFullStr) {
-			ownMapped.unshift({
-				key: '__fallback__',
+		const slides: CoverSlide[] = [];
+		// 1. Eigene Front-Fotos
+		for (const p of ownSorted.filter((p) => p.role === 'front')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
 				role: 'front',
-				thumbUrl: coverThumbStr,
-				fullUrl: coverFullStr,
-				caption: null,
-				isFallback: true
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
 			});
 		}
-		return ownMapped;
+		// 2. Discogs-Cache (gecacht durch ?/setCoverSource oder Pull)
+		if (c.discogsCoverCachePath) {
+			slides.push({
+				key: '__discogs__',
+				kind: 'discogs',
+				role: 'front',
+				thumbUrl: discogsThumbFor(c.discogsCoverCachePath),
+				fullUrl: `/uploads/${c.discogsCoverCachePath}`,
+				caption: 'Discogs-Cover'
+			});
+		} else if (c.discogsCoverUrl && slides.length === 0) {
+			// Discogs-URL nur als Notfall-Slide, wenn noch kein Cache und sonst nichts da.
+			slides.push({
+				key: '__discogs_url__',
+				kind: 'discogs',
+				role: 'front',
+				thumbUrl: c.discogsCoverUrl,
+				fullUrl: c.discogsCoverUrl,
+				caption: 'Discogs-Cover (nicht gecacht)'
+			});
+		}
+		// 3. Dreimetadaten / Externes Folge-Cover
+		if (externalCover) {
+			slides.push({
+				key: '__external__',
+				kind: 'external',
+				role: 'front',
+				thumbUrl: `/uploads/${externalCover.thumb}`,
+				fullUrl: `/uploads/${externalCover.original}`,
+				caption: 'Dreimetadaten-Cover'
+			});
+		}
+		// 4. Eigene Rueckseite
+		for (const p of ownSorted.filter((p) => p.role === 'back')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
+				role: 'back',
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
+			});
+		}
+		// 5. Eigene Extras
+		for (const p of ownSorted.filter((p) => p.role === 'extra')) {
+			slides.push({
+				key: p.id,
+				kind: 'own',
+				role: 'extra',
+				thumbUrl: `/uploads/${p.thumbPath ?? p.path}`,
+				fullUrl: `/uploads/${p.path}`,
+				caption: p.caption
+			});
+		}
+		return slides;
 	});
+
+	function slideBadgeLabel(s: CoverSlide): string {
+		if (s.kind === 'discogs') return 'Discogs';
+		if (s.kind === 'external') return 'Dreimetadaten';
+		return roleLabels[s.role];
+	}
 	let slideIdx = $state(0);
 	$effect(() => {
 		// Wenn sich die Fotos-Liste aendert (Upload/Delete), Index in Range halten.
@@ -271,7 +356,7 @@
 				<PhotoGallery
 					cassetteId={c.id}
 					photos={data.photos}
-					fallbackCover={fallbackCoverForGallery}
+					externalFrontCovers={externalFrontCoversForGallery}
 				/>
 			</div>
 
@@ -360,7 +445,7 @@
 								e.stopPropagation();
 								nextSlide(-1);
 							}}
-							aria-label="Vorheriges Foto"
+							aria-label="Vorheriges Bild"
 							class="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
 						>
 							<ChevronLeft size={20} />
@@ -371,7 +456,7 @@
 								e.stopPropagation();
 								nextSlide(1);
 							}}
-							aria-label="Nächstes Foto"
+							aria-label="Nächstes Bild"
 							class="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm hover:bg-black/75"
 						>
 							<ChevronRight size={20} />
@@ -390,15 +475,7 @@
 						<div
 							class="pointer-events-none absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white backdrop-blur-sm"
 						>
-							{#if curBadge.isFallback}
-								{c.coverSource === 'discogs'
-									? 'Discogs'
-									: c.coverSource === 'external'
-										? 'Externe Quelle'
-										: 'Aktuell'}
-							{:else}
-								{roleLabels[curBadge.role]}
-							{/if}
+							{slideBadgeLabel(curBadge)}
 						</div>
 					{/if}
 
@@ -470,48 +547,6 @@
 									</button>
 								</form>
 							{/each}
-							<form
-								method="POST"
-								action="?/uploadCoverPhoto"
-								enctype="multipart/form-data"
-								use:enhance={() => {
-									return ({ update }) => update();
-								}}
-							>
-								<label
-									class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
-								>
-									+ Foto hochladen
-									<input
-										type="file"
-										name="photo"
-										accept="image/*"
-										capture="environment"
-										onchange={(e) => {
-											const t = e.currentTarget as HTMLInputElement;
-											if (t.files && t.files.length > 0) t.form?.requestSubmit();
-										}}
-										class="hidden"
-									/>
-								</label>
-							</form>
-							{#if c.coverFotoPath}
-								<form
-									method="POST"
-									action="?/removeCoverPhoto"
-									use:enhance={() => {
-										return ({ update }) => update();
-									}}
-								>
-									<button
-										type="submit"
-										class="rounded-full px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
-										title="Eigenes Foto entfernen"
-									>
-										Foto entfernen
-									</button>
-								</form>
-							{/if}
 							{#if data.dreiSupported && !data.folgeCover}
 								<form
 									method="POST"
@@ -1171,7 +1206,7 @@
 				<PhotoGallery
 					cassetteId={c.id}
 					photos={data.photos}
-					fallbackCover={fallbackCoverForGallery}
+					externalFrontCovers={externalFrontCoversForGallery}
 				/>
 			</div>
 		</div>
