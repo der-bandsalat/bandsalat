@@ -52,7 +52,9 @@
 								{#if cover}
 									<img src={cover} alt="" loading="lazy" class="h-full w-full object-cover" />
 								{:else}
-									<div class="flex h-full items-center justify-center text-stone-400 dark:text-stone-600">
+									<div
+										class="flex h-full items-center justify-center text-stone-400 dark:text-stone-600"
+									>
 										<ImageIcon size={20} />
 									</div>
 								{/if}

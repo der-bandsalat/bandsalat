@@ -38,7 +38,13 @@ export const EDITABLE_COLUMNS: EditableColumn[] = [
 	{ key: 'auflageVariante', label: 'Auflage/Variante', widget: 'text', width: 'min-w-44' },
 	{ key: 'jahr', label: 'Jahr', widget: 'number', width: 'min-w-20' },
 	{ key: 'seriennummer', label: 'Seriennr.', widget: 'text', width: 'min-w-36' },
-	{ key: 'zustandMc', label: 'Zustand MC', widget: 'select', width: 'min-w-44', optionSource: 'media' },
+	{
+		key: 'zustandMc',
+		label: 'Zustand MC',
+		widget: 'select',
+		width: 'min-w-44',
+		optionSource: 'media'
+	},
 	{
 		key: 'zustandHuelle',
 		label: 'Zustand Hülle',

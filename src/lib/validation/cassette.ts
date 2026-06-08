@@ -11,18 +11,25 @@ const checkboxBool = z.preprocess(
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Datum muss YYYY-MM-DD sein.');
 
-const priceEur = z.preprocess((v) => {
-	if (v === '' || v === null || v === undefined) return null;
-	if (typeof v === 'string') {
-		const normalized = v.replace(',', '.').trim();
-		if (normalized === '') return null;
-		const n = Number(normalized);
-		if (!Number.isFinite(n)) return v; // lass zod weiter validieren
-		return Math.round(n * 100);
-	}
-	if (typeof v === 'number') return Math.round(v * 100);
-	return v;
-}, z.number({ error: 'Preis muss eine Zahl sein, z. B. 12,50.' }).int().min(0, 'Preis darf nicht negativ sein.').nullable());
+const priceEur = z.preprocess(
+	(v) => {
+		if (v === '' || v === null || v === undefined) return null;
+		if (typeof v === 'string') {
+			const normalized = v.replace(',', '.').trim();
+			if (normalized === '') return null;
+			const n = Number(normalized);
+			if (!Number.isFinite(n)) return v; // lass zod weiter validieren
+			return Math.round(n * 100);
+		}
+		if (typeof v === 'number') return Math.round(v * 100);
+		return v;
+	},
+	z
+		.number({ error: 'Preis muss eine Zahl sein, z. B. 12,50.' })
+		.int()
+		.min(0, 'Preis darf nicht negativ sein.')
+		.nullable()
+);
 
 export const CassetteFormSchema = z.object({
 	serie: z.string().trim().min(1, 'Serie ist Pflicht.').max(120),
