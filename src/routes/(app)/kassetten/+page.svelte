@@ -3,24 +3,32 @@
 	import BrandTitle from '$lib/components/BrandTitle.svelte';
 	import { formatEur } from '$lib/util/format';
 	import { coverThumbUrl, type ExternalCoverPaths } from '$lib/util/cover';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Search from '@lucide/svelte/icons/search';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import X from '@lucide/svelte/icons/x';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import ImagesIcon from '@lucide/svelte/icons/images';
-	import CloudCheck from '@lucide/svelte/icons/cloud-check';
-	import Cloud from '@lucide/svelte/icons/cloud';
 	import InlineRating from '$lib/components/InlineRating.svelte';
+	import CassetteTable from '$lib/components/CassetteTable.svelte';
+	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
 	import { reveal } from '$lib/actions/reveal';
 
 	let { data } = $props();
 	let showFilters = $state(false);
+	let editMode = $state(false);
 
 	const view = $derived((page.url.searchParams.get('view') ?? 'grid') as 'grid' | 'table');
+
+	function toggleEdit() {
+		editMode = !editMode;
+		// Beim Verlassen frische Daten laden (Statistiken etc. resyncen).
+		if (!editMode) invalidateAll();
+	}
 
 	function updateParam(key: string, value: string) {
 		const url = new URL(page.url);
@@ -63,6 +71,19 @@
 		>
 			<SlidersHorizontal size={20} />
 		</button>
+		{#if view === 'table'}
+			<button
+				type="button"
+				class="hidden h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 sm:flex dark:text-stone-300 dark:hover:bg-stone-800"
+				class:bg-brand-100={editMode}
+				class:dark:bg-brand-900={editMode}
+				aria-label="Bearbeiten"
+				aria-pressed={editMode}
+				onclick={toggleEdit}
+			>
+				<Pencil size={18} />
+			</button>
+		{/if}
 		<button
 			type="button"
 			class="flex h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
@@ -78,7 +99,11 @@
 	{/snippet}
 </AppHeader>
 
-<main class="mx-auto max-w-2xl px-4 py-4">
+<main
+	class="mx-auto px-4 py-4"
+	class:max-w-2xl={!(editMode && view === 'table')}
+	class:max-w-6xl={editMode && view === 'table'}
+>
 	<form method="GET" class="mb-3">
 		<div class="relative">
 			<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-stone-400">
@@ -327,68 +352,18 @@
 				</li>
 			{/each}
 		</ul>
+	{:else if editMode}
+		<CassetteEditTable
+			items={data.items}
+			folgeCovers={data.folgeCovers}
+			mediaGrades={data.mediaGrades}
+			sleeveGrades={data.sleeveGrades}
+		/>
 	{:else}
-		<div
-			class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
-		>
-			<table class="w-full text-sm">
-				<thead
-					class="bg-stone-50 text-xs uppercase tracking-wide text-stone-500 dark:bg-stone-800 dark:text-stone-400"
-				>
-					<tr>
-						<th class="w-12 px-2 py-2 text-left"></th>
-						<th class="px-2 py-2 text-left">Serie · Folge · Titel</th>
-						<th class="hidden px-2 py-2 text-left sm:table-cell">Label</th>
-						<th class="hidden px-2 py-2 text-left sm:table-cell">Jahr</th>
-						<th class="px-2 py-2 text-left">Bewertung</th>
-						<th class="w-8 px-2 py-2"></th>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-stone-100 dark:divide-stone-800">
-					{#each data.items as it (it.id)}
-						{@const cover = coverThumbUrl(it, externalFor(it))}
-						<tr class="hover:bg-stone-50 dark:hover:bg-stone-800">
-							<td class="px-2 py-2">
-								<a href={`/kassetten/${it.id}`} class="block">
-									<div class="h-10 w-10 overflow-hidden rounded bg-stone-100 dark:bg-stone-800">
-										{#if cover}
-											<img src={cover} alt="" loading="lazy" class="h-full w-full object-cover" />
-										{:else}
-											<div class="flex h-full items-center justify-center text-stone-400">
-												<ImageIcon size={14} />
-											</div>
-										{/if}
-									</div>
-								</a>
-							</td>
-							<td class="min-w-0 px-2 py-2">
-								<a href={`/kassetten/${it.id}`} class="block">
-									<div class="truncate text-xs text-stone-500 dark:text-stone-400">
-										{it.serie}{it.folgeNr != null
-											? ` · ${it.folgeNr}`
-											: it.folgeNrLabel
-												? ` · ${it.folgeNrLabel}`
-												: ''}
-									</div>
-									<div class="truncate font-medium">{it.titel}</div>
-								</a>
-							</td>
-							<td class="hidden px-2 py-2 text-stone-500 sm:table-cell">{it.label ?? '—'}</td>
-							<td class="hidden px-2 py-2 text-stone-500 sm:table-cell">{it.jahr ?? '—'}</td>
-							<td class="whitespace-nowrap px-2 py-2">
-								<InlineRating cassetteId={it.id} value={it.rating} size={14} />
-							</td>
-							<td class="px-2 py-2 text-right">
-								{#if it.discogsInstanceId}
-									<CloudCheck size={14} class="inline text-emerald-600" />
-								{:else if it.discogsReleaseId}
-									<Cloud size={14} class="inline text-emerald-700/60" />
-								{/if}
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		<CassetteTable
+			items={data.items}
+			folgeCovers={data.folgeCovers}
+			photoCounts={data.photoCounts}
+		/>
 	{/if}
 </main>

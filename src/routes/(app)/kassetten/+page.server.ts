@@ -3,6 +3,7 @@ import { photoCountsForCassettes } from '$lib/server/db/cassette-photos';
 import { getAllFolgeCoversMap } from '$lib/server/db/folge-cover';
 import { findGaps } from '$lib/server/gaps';
 import { getAllSeriesTargets } from '$lib/server/db/series';
+import { MEDIA_GRADES, SLEEVE_GRADES } from '$lib/server/db/schema';
 import { SearchFilterSchema } from '$lib/validation/cassette';
 import type { PageServerLoad } from './$types';
 
@@ -33,6 +34,8 @@ export const load: PageServerLoad = ({ url }) => {
 		labels,
 		folgeCovers: folgeCoverMap,
 		photoCounts,
+		mediaGrades: MEDIA_GRADES,
+		sleeveGrades: SLEEVE_GRADES,
 		filter: parsed.success ? parsed.data : {},
 		stats: {
 			total: items.length,

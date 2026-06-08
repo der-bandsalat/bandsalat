@@ -4,7 +4,7 @@
 	import { coverThumbUrl, type ExternalCoverPaths } from '$lib/util/cover';
 	import { reveal } from '$lib/actions/reveal';
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -18,8 +18,16 @@
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import InlineRating from '$lib/components/InlineRating.svelte';
+	import CassetteTable from '$lib/components/CassetteTable.svelte';
+	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
 
 	let { data, form } = $props();
+	let editMode = $state(false);
+
+	function toggleEdit() {
+		editMode = !editMode;
+		if (!editMode) invalidateAll();
+	}
 	let logoSubmitting = $state(false);
 	let logoFromDiscogsSubmitting = $state(false);
 	let targetSubmitting = $state(false);
@@ -79,6 +87,19 @@
 				<LayoutGrid size={18} />
 			{/if}
 		</button>
+		{#if view === 'list'}
+			<button
+				type="button"
+				class="hidden h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 sm:flex dark:text-stone-300 dark:hover:bg-stone-800"
+				class:bg-brand-100={editMode}
+				class:dark:bg-brand-900={editMode}
+				aria-label="Bearbeiten"
+				aria-pressed={editMode}
+				onclick={toggleEdit}
+			>
+				<Pencil size={18} />
+			</button>
+		{/if}
 		{#if d.serie === 'Die drei ???' && data.dreiAuflagenEnabled}
 			<a
 				href={`/serien/${encodeURIComponent(d.serie)}/auflagen`}
@@ -98,7 +119,11 @@
 	{/snippet}
 </AppHeader>
 
-<main class="mx-auto max-w-2xl px-4 py-4">
+<main
+	class="mx-auto px-4 py-4"
+	class:max-w-2xl={!(editMode && view === 'list')}
+	class:max-w-6xl={editMode && view === 'list'}
+>
 	<section
 		class="mb-4 flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900"
 	>
@@ -493,68 +518,14 @@
 				</li>
 			{/each}
 		</ul>
+	{:else if editMode}
+		<CassetteEditTable
+			items={d.items}
+			folgeCovers={data.folgeCovers}
+			mediaGrades={data.mediaGrades}
+			sleeveGrades={data.sleeveGrades}
+		/>
 	{:else}
-		<ul class="space-y-2">
-			{#each d.items as c, i (c.id)}
-				{@const cover = coverThumbUrl(c, externalFor(c))}
-				<li
-					class="reveal flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2 shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-500/10 dark:border-stone-800 dark:bg-stone-900"
-					use:reveal={{ delay: Math.min(i * 30, 300) }}
-				>
-					<a
-						href={`/kassetten/${c.id}`}
-						class="flex min-w-0 flex-1 items-center gap-3 transition active:scale-[0.99]"
-					>
-						<div
-							class="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-100 dark:bg-stone-800"
-						>
-							{#if cover}
-								<img src={cover} alt="" loading="lazy" class="h-full w-full object-cover" />
-							{:else}
-								<div
-									class="flex h-full items-center justify-center text-stone-400 dark:text-stone-600"
-								>
-									<ImageIcon size={20} />
-								</div>
-							{/if}
-						</div>
-						<div class="min-w-0 flex-1">
-							<div class="flex items-baseline gap-2 text-xs text-stone-500 dark:text-stone-400">
-								{#if c.folgeNr != null}
-									<span class="rounded-full bg-stone-100 px-1.5 py-0.5 font-mono dark:bg-stone-800">
-										{c.folgeNr}
-									</span>
-								{:else if c.folgeNrLabel}
-									<span
-										class="rounded-full bg-stone-100 px-1.5 py-0.5 font-mono text-[10px] dark:bg-stone-800"
-									>
-										{c.folgeNrLabel}
-									</span>
-								{/if}
-								{#if c.label}<span>{c.label}</span>{/if}
-								{#if c.jahr}<span>· {c.jahr}</span>{/if}
-							</div>
-							<div class="truncate font-medium leading-snug">{c.titel}</div>
-						</div>
-					</a>
-					<InlineRating cassetteId={c.id} value={c.rating} size={14} />
-					{#if c.discogsInstanceId}
-						<span
-							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"
-							title="Mit Discogs-Collection synchronisiert"
-						>
-							<CloudCheck size={14} />
-						</span>
-					{:else if c.discogsReleaseId}
-						<span
-							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-							title="Discogs-Release verknüpft, aber nicht gepusht"
-						>
-							<Cloud size={14} />
-						</span>
-					{/if}
-				</li>
-			{/each}
-		</ul>
+		<CassetteTable items={d.items} folgeCovers={data.folgeCovers} />
 	{/if}
 </main>

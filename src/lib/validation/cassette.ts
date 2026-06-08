@@ -22,7 +22,7 @@ const priceEur = z.preprocess((v) => {
 	}
 	if (typeof v === 'number') return Math.round(v * 100);
 	return v;
-}, z.number().int().min(0, 'Preis darf nicht negativ sein.').nullable());
+}, z.number({ error: 'Preis muss eine Zahl sein, z. B. 12,50.' }).int().min(0, 'Preis darf nicht negativ sein.').nullable());
 
 export const CassetteFormSchema = z.object({
 	serie: z.string().trim().min(1, 'Serie ist Pflicht.').max(120),
@@ -56,6 +56,36 @@ export const CassetteFormSchema = z.object({
 
 export type CassetteFormInput = z.input<typeof CassetteFormSchema>;
 export type CassetteFormParsed = z.output<typeof CassetteFormSchema>;
+
+/**
+ * Partielles Schema für Inline-/Panel-Bearbeitung (PATCH /api/cassettes/[id]).
+ * Nur direkt editierbare Spalten (keine discogs-/auflageId-Sonderlogik).
+ * Pflichtfelder (serie, titel) bleiben non-empty, falls mitgeschickt.
+ */
+export const CassetteUpdateSchema = CassetteFormSchema.pick({
+	serie: true,
+	folgeNr: true,
+	folgeNrLabel: true,
+	titel: true,
+	format: true,
+	label: true,
+	auflageVariante: true,
+	jahr: true,
+	seriennummer: true,
+	zustandMc: true,
+	zustandHuelle: true,
+	originalhuelle: true,
+	vollstaendig: true,
+	kaufdatum: true,
+	kaufpreisCent: true,
+	kaufort: true,
+	folder: true,
+	rating: true,
+	review: true,
+	notiz: true
+}).partial();
+
+export type CassetteUpdateParsed = z.output<typeof CassetteUpdateSchema>;
 
 export const SearchFilterSchema = z.object({
 	q: z.string().trim().max(120).optional(),

@@ -7,6 +7,39 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-06-08
+
+### Features
+
+- **Einheitliche Listenansicht**: `/kassetten` (Tabellen-Modus) und die
+  Serien-Detailseite (Listen-Modus) teilen sich jetzt eine Komponente
+  (`CassetteTable`) und sehen identisch aus — Cover + Folge-Badge +
+  Titel, Label/Jahr als Desktop-Spalten bzw. Mobile-Subline.
+- **Desktop-Bearbeitungsmodus** (Stift-Toggle in der Tabellen-/Listen-
+  Ansicht, nur Desktop): Felder direkt in der Liste pflegen, ohne auf
+  jede Kassette einzeln zu klicken.
+  - **Inline-Spalten** mit frei wählbaren Feldern (Spalten-Picker, Auswahl
+    bleibt im Browser gespeichert) — Zelle für Zelle die Liste runter via
+    Tab/Enter. Gedacht zum Nachpflegen eines Felds über viele Kassetten
+    (Zustand, Kaufpreis, Kaufort …).
+  - **Zeilen-Panel** (Chevron je Zeile) klappt alle Felder einer Kassette
+    auf, inkl. Review und Notiz — zum kompletten Erfassen einer Kassette.
+  - **Auto-Speichern pro Feld** beim Verlassen der Zelle mit dezentem
+    ✓-Feedback; kein Speichern-Knopf nötig.
+- Neuer Endpoint **`PATCH /api/cassettes/[id]`** für feldweises Speichern
+  (zod-Whitelist auf editierbare Felder, `ensureEditor`-Guard).
+
+### Fixes
+
+- **Listen auf iOS Safari**: Virtual-Scrolling entfernt (sticky `thead`
+  im Fensterfluss + JS-Scroll-Handling war auf dem iPhone kaputt). Alle
+  Zeilen werden normal gerendert — ein Seiten-Scrollbalken, robust.
+- Bearbeiten: getippter Wert bleibt beim Verlassen der Zelle erhalten,
+  auch wenn das Speichern fehlschlägt (Entwurf wurde vorher kurz auf den
+  alten Wert zurückgesetzt).
+- Kaufpreis-Fehlermeldung jetzt auf Deutsch und mit Beispiel
+  („Preis muss eine Zahl sein, z. B. 12,50.").
+
 ## [0.2.1] – 2026-05-28
 
 ### Features
@@ -90,6 +123,7 @@ API und Datenbankschema können sich bis 1.0 noch ändern.
 - `/uploads/*` ohne immutable Cache-Control.
 - Touch-Targets der Inline-Rating-Komponente knapp unter 44 px.
 
-[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/der-bandsalat/bandsalat/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/der-bandsalat/bandsalat/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/der-bandsalat/bandsalat/compare/v0.1.0-beta...v0.2.1
 [0.1.0-beta]: https://github.com/der-bandsalat/bandsalat/releases/tag/v0.1.0-beta

@@ -14,6 +14,7 @@ import { getRelease } from '$lib/server/discogs';
 import { discogs, DiscogsError } from '$lib/server/discogs/client';
 import { isDreiAuflagenEnabled } from '$lib/server/settings';
 import { getAllFolgeCoversMap } from '$lib/server/db/folge-cover';
+import { MEDIA_GRADES, SLEEVE_GRADES } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 import { ensureEditor } from '$lib/server/auth/guard';
 
@@ -26,7 +27,9 @@ export const load: PageServerLoad = ({ params, url }) => {
 	return {
 		detail,
 		dreiAuflagenEnabled: isDreiAuflagenEnabled(),
-		folgeCovers: Object.fromEntries(getAllFolgeCoversMap())
+		folgeCovers: Object.fromEntries(getAllFolgeCoversMap()),
+		mediaGrades: MEDIA_GRADES,
+		sleeveGrades: SLEEVE_GRADES
 	};
 };
 
