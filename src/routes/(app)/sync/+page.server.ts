@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { env } from '$lib/server/env';
+import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
 import { DiscogsError } from '$lib/server/discogs/client';
 import {
 	createFolder,
@@ -21,8 +21,11 @@ import {
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const e = env();
-	const hasToken = Boolean(e.DISCOGS_TOKEN && e.DISCOGS_USERNAME);
+	// getDiscogsToken()/getDiscogsUsername() statt env() — sonst gilt die Seite
+	// als "nicht konfiguriert", obwohl Token + Username über Einstellungen →
+	// Keys (DB-Override) hinterlegt sind. Der Discogs-Client nutzt dieselben
+	// Getter.
+	const hasToken = Boolean(getDiscogsToken() && getDiscogsUsername());
 	let folders: Awaited<ReturnType<typeof listFolders>> = [];
 	let foldersError: string | null = null;
 	if (hasToken) {
@@ -34,7 +37,7 @@ export const load: PageServerLoad = async () => {
 	}
 	return {
 		hasToken,
-		username: e.DISCOGS_USERNAME ?? null,
+		username: getDiscogsUsername(),
 		stats: getSyncStats(),
 		status: getSyncStatus(),
 		pullStatus: getPullStatus(),

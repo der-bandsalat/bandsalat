@@ -7,6 +7,17 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.4.2] – 2026-06-11
+
+### Fixes
+
+- **Discogs-Sync erkennt UI-Konfiguration**: Die Sync-Seite (und der
+  Marktpreis-Refresh in der Statistik) prüften nur die `.env`-Variablen —
+  wer Token + Username über Einstellungen → Keys hinterlegt hatte, bekam
+  fälschlich „Discogs nicht konfiguriert". Jetzt nutzen beide dieselben
+  Getter wie der Discogs-Client selbst; die Hinweismeldung verlinkt auf
+  Einstellungen → Keys.
+
 ## [0.4.1] – 2026-06-11
 
 ### Features

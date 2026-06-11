@@ -1,7 +1,7 @@
 {
 	"name": "bandsalat",
 	"private": true,
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"type": "module",
 	"description": "Self-hosted Katalog für Hörspielkassetten mit Discogs-Zwei-Wege-Sync",
 	"license": "MIT",

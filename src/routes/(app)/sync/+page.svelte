@@ -71,8 +71,10 @@
 			class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
 		>
 			<strong>Discogs nicht konfiguriert.</strong>
-			Setze <code>DISCOGS_TOKEN</code> und <code>DISCOGS_USERNAME</code> in der <code>.env</code>.
-			Token erstellen unter
+			Hinterlege Token und Username unter
+			<a href="/einstellungen/keys" class="underline">Einstellungen → Keys</a>
+			(alternativ <code>DISCOGS_TOKEN</code>/<code>DISCOGS_USERNAME</code> in der
+			<code>.env</code>). Token erstellen unter
 			<a
 				href="https://www.discogs.com/settings/developers"
 				target="_blank"

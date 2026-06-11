@@ -20,8 +20,8 @@ export const load: PageServerLoad = () => {
 
 export const actions: Actions = {
 	refreshPrices: async ({ request }) => {
-		const e = env();
-		if (!e.DISCOGS_TOKEN) {
+		// Getter statt env() — respektiert den DB-Override aus Einstellungen → Keys.
+		if (!getDiscogsToken()) {
 			return fail(400, { priceError: 'Discogs-Token nicht gesetzt.' });
 		}
 		const form = await request.formData();
