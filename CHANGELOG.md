@@ -7,6 +7,10 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.4.0] – 2026-06-11
+
+Feedback-Runde von Max — danke! Alle sieben Punkte umgesetzt.
+
 ### Features
 
 - **Folgen-Suche in der Serie**: Suchfeld auf der Serien-Detailseite
