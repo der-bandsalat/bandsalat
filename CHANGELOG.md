@@ -7,6 +7,21 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixes
+
+- **Scan-Limit Bulk-Erfassung**: Das Stunden-Limit für Vision-Scans ist
+  jetzt per `SCAN_RATE_LIMIT_PER_HOUR` konfigurierbar und steigt von 30
+  auf 120 Scans/h (IP-Limit: das Doppelte). Damit bricht die Erfassung
+  ganzer Sammlungen nicht mehr nach ~30 Folgen ab.
+- **Scan-Fehlermeldungen**: Beim Erreichen des Limits kam nur ein
+  generisches „Scan fehlgeschlagen (429)" — jetzt wird die echte Meldung
+  samt Wartezeit angezeigt. Zusätzlich bricht der Scan clientseitig nach
+  90 s sauber ab statt endlos zu laden (hängende API / Funkloch).
+- **Folgennummer vs. Seriennummer**: Der Scan-Prompt grenzt Folgennummer
+  und Katalog-/Seriennummer jetzt explizit voneinander ab; zusätzlich
+  verwirft eine Plausibilitätsprüfung Folgennummern > 999 sowie Werte,
+  die exakt der erkannten Seriennummer entsprechen.
+
 ## [0.3.0] – 2026-06-08
 
 ### Features

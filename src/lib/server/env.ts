@@ -37,6 +37,9 @@ const Env = z.object({
 	DISCOGS_USERNAME: z.string().optional(),
 	ANTHROPIC_API_KEY: z.string().optional(),
 	SCAN_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+	// Scans pro Stunde pro User. Bremst Skript-Missbrauch, muss aber ehrliche
+	// Bulk-Erfassung (ganze Sammlung am Stück) durchlassen.
+	SCAN_RATE_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(120),
 	DATA_DIR: z.string().default('./data'),
 	PORT: z.coerce.number().int().positive().default(3000),
 	NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

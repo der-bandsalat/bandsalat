@@ -1,4 +1,4 @@
-import { error, json, type RequestHandler } from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 import { hasAnthropic } from '$lib/server/ai/anthropic';
 import { consumeRateLimit } from '$lib/server/auth/rate-limit';
 import { ensureEditor } from '$lib/server/auth/guard';
@@ -65,21 +65,31 @@ function toDuplicatePayload(c: Cassette, reason: 'exact' | 'release'): Duplicate
 
 export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	ensureEditor(locals);
-	// Anthropic kostet Geld — 30 Scans/h pro User reichen für ehrliche Nutzung,
-	// blockieren aber Skript-Missbrauch.
-	const rl = consumeRateLimit(`scan:${locals.user!.id}`, 30, 60 * 60 * 1000);
+	const envCfg = env();
+	// Anthropic kostet Geld — das Stunden-Limit (SCAN_RATE_LIMIT_PER_HOUR)
+	// bremst Skript-Missbrauch, lässt aber Bulk-Erfassung ganzer Sammlungen
+	// durch. Fehler als {error}-JSON, damit der PhotoScanner die Meldung
+	// samt Wartezeit anzeigen kann (throw error() liefert {message}).
+	const hourlyLimit = envCfg.SCAN_RATE_LIMIT_PER_HOUR;
+	const rl = consumeRateLimit(`scan:${locals.user!.id}`, hourlyLimit, 60 * 60 * 1000);
 	if (!rl.allowed) {
 		const wait = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 60_000));
-		throw error(429, `Zu viele Scans — bitte in ${wait} Minuten erneut versuchen.`);
+		return json(
+			{ error: `Scan-Limit erreicht (${hourlyLimit}/Stunde) — in ${wait} Min. geht es weiter.` },
+			{ status: 429 }
+		);
 	}
 	// Zusätzlich IP-Limit gegen Account-Sharing.
-	const ipLimit = consumeRateLimit(`scan-ip:${getClientAddress()}`, 60, 60 * 60 * 1000);
+	const ipLimit = consumeRateLimit(
+		`scan-ip:${getClientAddress()}`,
+		hourlyLimit * 2,
+		60 * 60 * 1000
+	);
 	if (!ipLimit.allowed) {
-		throw error(429, 'Zu viele Scans von dieser IP.');
+		return json({ error: 'Zu viele Scans von dieser IP.' }, { status: 429 });
 	}
 	// Demo-Modus: hartes Lifetime-Limit pro Slot (Counter wird beim Nightly-
 	// Reset durch Volume-Restore wieder auf 0 gesetzt).
-	const envCfg = env();
 	if (envCfg.DEMO_MODE) {
 		if (envCfg.DEMO_SCAN_LIMIT === 0) {
 			return json({ error: 'Vision-Scan ist in dieser Demo deaktiviert.' }, { status: 403 });

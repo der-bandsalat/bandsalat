@@ -13,6 +13,8 @@ Aus dem Foto einer Kassette oder ihres Covers extrahierst du strukturierte Metad
 Regeln:
 - Wenn du dir bei einem Feld unsicher bist, lass es WEG. Rate nicht.
 - "serie" enthält NUR den Serien-Namen ohne Folgennummer oder Episodentitel.
+- "folge_nr" NUR übernehmen, wenn sie explizit als Folgennummer auf dem Cover steht (z.B. "Folge 14" oder die große Nummer direkt beim Serien-Namen/Titel). NIEMALS aus der Katalog-/Seriennummer ableiten: "115311" auf dem Rücken ist eine Seriennummer, NICHT Folge 115311 und auch nicht Folge 11 oder 31.
+- "seriennummer" ist die gedruckte/eingeprägte Katalognummer (oft 6-stellig, z.B. "115311") — ein anderes Feld als die Folgennummer. Verwechsle die beiden nicht.
 - "titel" enthält NUR den Episodentitel, ohne "Folge X" oder Serien-Namen davor. Behalte die exakte Groß-/Kleinschreibung wie auf dem Cover.
 - "huellen_zustand" ist eine grobe visuelle Einschätzung NUR der Hülle (Knicke, Verfärbungen, Risse). Niemals die MC selbst bewerten. Wenn du keine Hülle siehst, lass es weg.
 - "auflage_variante" nur ausfüllen wenn auf dem Cover ein eindeutiges Merkmal wie "schwarz-gelb Logo", "weißes Cover", "Original Hörspiel zum Film" sichtbar ist.`;
@@ -31,7 +33,8 @@ const SCAN_TOOL: Anthropic.Tool = {
 			},
 			folge_nr: {
 				type: 'integer',
-				description: 'Folgennummer (numerisch), z.B. 14 für "Die drei ??? 14".'
+				description:
+					'Folgennummer (numerisch), z.B. 14 für "Die drei ??? 14". Nur wenn explizit als Folge auf dem Cover — nie aus der Katalog-/Seriennummer ableiten.'
 			},
 			folge_label: {
 				type: 'string',
@@ -109,6 +112,23 @@ async function prepareImage(buf: Buffer): Promise<Buffer> {
 	return stage.jpeg({ quality: 86, mozjpeg: true }).toBuffer();
 }
 
+/**
+ * Fängt Katalognummer-Verwechslungen ab: Folgennummern jenseits 999 gibt es
+ * bei Hörspielserien nicht (das ist eine Seriennummer wie "115311"), und wenn
+ * die Folgennummer exakt den Ziffern der erkannten Seriennummer entspricht,
+ * hat das Modell die Felder vertauscht. Lieber leer lassen als falsch raten.
+ */
+function sanitizeFolgeNr(
+	folgeNr: number | undefined,
+	seriennummer: string | undefined
+): number | undefined {
+	if (folgeNr === undefined) return undefined;
+	if (folgeNr < 1 || folgeNr > 999) return undefined;
+	const serienDigits = seriennummer?.replace(/\D/g, '');
+	if (serienDigits && String(folgeNr) === serienDigits) return undefined;
+	return folgeNr;
+}
+
 function validateGrade(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	return (SLEEVE_GRADES as readonly string[]).includes(value) ? value : undefined;
@@ -157,8 +177,10 @@ export async function scanCassettePhoto(buf: Buffer): Promise<ScanResult> {
 	const raw = toolBlock.input as ExtractedMetadata;
 	const extracted: ExtractedMetadata = {
 		serie: raw.serie?.trim() || undefined,
-		folge_nr:
+		folge_nr: sanitizeFolgeNr(
 			typeof raw.folge_nr === 'number' && Number.isFinite(raw.folge_nr) ? raw.folge_nr : undefined,
+			raw.seriennummer?.trim() || undefined
+		),
 		folge_label: raw.folge_label?.trim() || undefined,
 		titel: raw.titel?.trim() || undefined,
 		label: raw.label?.trim() || undefined,
@@ -180,4 +202,4 @@ export async function scanCassettePhoto(buf: Buffer): Promise<ScanResult> {
 	};
 }
 
-export { validateGrade, validateMediaGrade };
+export { validateGrade, validateMediaGrade, sanitizeFolgeNr };

@@ -115,10 +115,15 @@
 		try {
 			const form = new FormData();
 			form.append('photo', photoFile);
-			const res = await fetch('/api/scan', { method: 'POST', body: form });
-			const body = await res.json();
+			// Timeout gegen "lädt endlos" bei hängender Vision-API / Funkloch.
+			const res = await fetch('/api/scan', {
+				method: 'POST',
+				body: form,
+				signal: AbortSignal.timeout(90_000)
+			});
+			const body = await res.json().catch(() => null);
 			if (!res.ok) {
-				error = body?.error ?? `Scan fehlgeschlagen (${res.status}).`;
+				error = body?.error ?? body?.message ?? `Scan fehlgeschlagen (${res.status}).`;
 				return;
 			}
 			extracted = body.extracted;
@@ -128,7 +133,11 @@
 			model = body.model;
 			tokens = body.tokens;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Netzwerk-Fehler.';
+			if (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+				error = 'Scan hat zu lange gedauert — bitte erneut versuchen.';
+			} else {
+				error = e instanceof Error ? e.message : 'Netzwerk-Fehler.';
+			}
 		} finally {
 			scanning = false;
 		}
