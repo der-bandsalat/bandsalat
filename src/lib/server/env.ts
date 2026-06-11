@@ -68,7 +68,12 @@ let dotEnvLoaded = false;
 export function env(): AppEnv {
 	if (cached) return cached;
 	if (!dotEnvLoaded) {
-		loadDotEnvFile(resolve(process.cwd(), '.env'));
+		// Unter vitest die Entwickler-.env NICHT laden — sonst hängen Tests vom
+		// lokalen Setup ab (z.B. DEMO_MODE=true unterdrückt den Discogs-Token,
+		// und die Suite ist lokal rot, in CI aber grün).
+		if (process.env.NODE_ENV !== 'test') {
+			loadDotEnvFile(resolve(process.cwd(), '.env'));
+		}
 		dotEnvLoaded = true;
 	}
 	const parsed = Env.safeParse(process.env);
