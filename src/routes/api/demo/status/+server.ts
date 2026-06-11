@@ -1,14 +1,31 @@
 import { json } from '@sveltejs/kit';
 import { sql } from 'drizzle-orm';
+import { timingSafeEqual } from 'node:crypto';
 import type { RequestHandler } from './$types';
 import { env } from '$lib/server/env';
 import { getUserByLogin } from '$lib/server/db/users';
+import { getLastActivityAt } from '$lib/server/activity';
 import { db } from '$lib/server/db/client';
 import { cassettes, scanEvents } from '$lib/server/db/schema';
 
-export const GET: RequestHandler = async () => {
+function constEq(a: string | null, b: string | undefined): boolean {
+	if (!a || !b) return false;
+	const ab = Buffer.from(a);
+	const bb = Buffer.from(b);
+	if (ab.length !== bb.length) return false;
+	return timingSafeEqual(ab, bb);
+}
+
+export const GET: RequestHandler = async ({ request }) => {
 	const e = env();
 	const user = getUserByLogin(e.DEMO_USERNAME);
+
+	// Der Endpoint ist öffentlich (Orchestrator-Healthcheck) — der Aktivitäts-
+	// Zeitstempel geht aber nur an den Orchestrator (geteilte Secrets), nicht
+	// an beliebige Anfragen von außen.
+	const orchestratorAuthed =
+		constEq(request.headers.get('x-demo-key'), e.DEMO_HMAC_SECRET) ||
+		constEq(request.headers.get('x-support-key'), e.SUPPORT_HMAC_SECRET);
 
 	// Aggregate-Stats, von Orchestrator-Admin aggregierbar pro Slot.
 	const cassetteCount =
@@ -44,7 +61,8 @@ export const GET: RequestHandler = async () => {
 			scansOk: scanTotals.ok,
 			tokensIn: scanTotals.inTok,
 			tokensOut: scanTotals.outTok,
-			scansLast24h: last24h
+			scansLast24h: last24h,
+			lastActivityAt: orchestratorAuthed ? getLastActivityAt() : null
 		}
 	});
 };

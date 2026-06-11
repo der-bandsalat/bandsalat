@@ -1,6 +1,7 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { clearSessionCookie, verifySessionToken, SESSION_COOKIE } from '$lib/server/auth/session';
 import { getUserById } from '$lib/server/db/users';
+import { touchActivity } from '$lib/server/activity';
 import { initApp } from '$lib/server/init';
 import { htmlAttrsFor, readTheme } from '$lib/server/theme';
 
@@ -38,6 +39,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const next = event.url.pathname + event.url.search;
 		throw redirect(303, `/login?next=${encodeURIComponent(next)}`);
 	}
+
+	// Aktivitäts-Marker (nur Zeitpunkt, gedrosselt) — nur für eingeloggte User.
+	if (user) touchActivity();
 
 	const theme = readTheme(event.cookies);
 	const { className, dataTheme } = htmlAttrsFor(theme);

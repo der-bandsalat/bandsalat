@@ -7,6 +7,16 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.4.1] – 2026-06-11
+
+### Features
+
+- **Aktivitäts-Marker für den Orchestrator**: Die App merkt sich gedrosselt
+  (max. 1×/Minute) den Zeitpunkt der letzten eingeloggten Interaktion —
+  bewusst nur _dass_, nicht _was_. `/api/demo/status` gibt den Wert nur
+  an Anfragen mit gültigem Orchestrator-Secret heraus (`x-demo-key` /
+  `x-support-key`, timing-safe verglichen), nicht an die Öffentlichkeit.
+
 ## [0.4.0] – 2026-06-11
 
 Feedback-Runde von Max — danke! Alle sieben Punkte umgesetzt.
