@@ -18,6 +18,10 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   Scanner-Dialog gecroppt werden (Button auf der Vorschau), bevor es an
   der Kassette gespeichert wird — ohne zweiten KI-Aufruf, ohne Umweg
   über die Galerie.
+- **Folgen-Navigation in der Folgenansicht**: Swipe nach links/rechts
+  wechselt zur nächsten/vorherigen Folge der Serie (Cover-Slider behält
+  seine eigene Geste); zusätzlich ‹/›-Buttons mit „Folge X von Y" für
+  Desktop.
 
 ### Fixes
 

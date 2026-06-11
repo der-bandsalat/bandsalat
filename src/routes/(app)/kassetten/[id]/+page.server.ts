@@ -13,9 +13,9 @@ import {
 	deleteCassettePhoto,
 	listCassettePhotos
 } from '$lib/server/db/cassette-photos';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 import { db } from '$lib/server/db/client';
-import { cassettePhotos } from '$lib/server/db/schema';
+import { cassettePhotos, cassettes } from '$lib/server/db/schema';
 import { cacheCoverFromUrl } from '$lib/server/discogs/cover-cache';
 import { DiscogsError } from '$lib/server/discogs/client';
 import { pullOne, pushOne, removeOne } from '$lib/server/discogs/sync';
@@ -41,7 +41,22 @@ export const load: PageServerLoad = ({ params }) => {
 		cassette.folgeNr != null ? getFolgeCover(cassette.serie, cassette.folgeNr) : undefined;
 	const folgeSynopsis =
 		cassette.folgeNr != null ? getFolgeSynopsis(cassette.serie, cassette.folgeNr) : undefined;
+	// Nachbar-Folgen innerhalb der Serie für Swipe/Pfeile — gleiche Sortierung
+	// wie die Serienansicht (folgeNr, dann createdAt).
+	const siblings = db()
+		.select({ id: cassettes.id, folgeNr: cassettes.folgeNr, titel: cassettes.titel })
+		.from(cassettes)
+		.where(eq(cassettes.serie, cassette.serie))
+		.orderBy(asc(cassettes.folgeNr), asc(cassettes.createdAt))
+		.all();
+	const navIdx = siblings.findIndex((s) => s.id === cassette.id);
 	return {
+		seriesNav: {
+			prev: navIdx > 0 ? siblings[navIdx - 1] : null,
+			next: navIdx >= 0 && navIdx < siblings.length - 1 ? siblings[navIdx + 1] : null,
+			index: navIdx,
+			total: siblings.length
+		},
 		cassette,
 		photos: listCassettePhotos(cassette.id),
 		serien: distinctSerien(),

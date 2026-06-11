@@ -19,7 +19,7 @@
 	import CloudOff from '@lucide/svelte/icons/cloud-off';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import StarRating from '$lib/components/StarRating.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import Headphones from '@lucide/svelte/icons/headphones';
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
@@ -293,15 +293,22 @@
 	let slideIdx = $state(0);
 	let lastCoverSource: string | undefined = undefined;
 	let lastSlidesKey = '';
+	let lastCassetteId = '';
 	$effect(() => {
 		// Range-Clamp wenn sich Fotos aendern (Upload/Delete).
 		if (slideIdx >= coverSlides.length) slideIdx = Math.max(0, coverSlides.length - 1);
 		// Springe auf den coverSource-passenden Slide, wenn sich coverSource
-		// aendert ODER beim ersten Render der Slide-Liste. Manuelles Blättern
-		// danach bleibt erhalten bis die Quelle wieder umgeschaltet wird.
+		// aendert, eine andere Kassette geladen wird (Folgen-Navigation) ODER
+		// beim ersten Render der Slide-Liste. Manuelles Blättern danach bleibt
+		// erhalten bis die Quelle wieder umgeschaltet wird.
 		const slidesKey = coverSlides.map((s) => s.key).join('|');
-		if (c.coverSource !== lastCoverSource || (!lastSlidesKey && slidesKey)) {
+		if (
+			c.coverSource !== lastCoverSource ||
+			c.id !== lastCassetteId ||
+			(!lastSlidesKey && slidesKey)
+		) {
 			lastCoverSource = c.coverSource;
+			lastCassetteId = c.id;
 			lastSlidesKey = slidesKey;
 			slideIdx = preferredSlideIdx();
 		} else if (slidesKey !== lastSlidesKey) {
@@ -332,6 +339,37 @@
 		// Nur horizontale Swipes mit ausreichendem Hub auswerten.
 		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
 			nextSlide(dx > 0 ? -1 : 1);
+		}
+	}
+
+	// Swipe zur nächsten/vorherigen Folge der Serie (nur Ansicht-Modus).
+	// Der Cover-Slider hat seine eigene Swipe-Geste — Swipes, die dort starten,
+	// werden über data-cover-slider ausgenommen.
+	const nav = $derived(data.seriesNav);
+	let navTouchX = 0;
+	let navTouchY = 0;
+	let navSwipeActive = false;
+	function onNavTouchStart(e: TouchEvent) {
+		const t = e.touches[0];
+		if (!t) return;
+		// Cover-Slider (eigene Geste) und Eingabefelder (Textselektion) ausnehmen.
+		navSwipeActive = !(e.target as HTMLElement | null)?.closest?.(
+			'[data-cover-slider], input, textarea, select'
+		);
+		navTouchX = t.clientX;
+		navTouchY = t.clientY;
+	}
+	function onNavTouchEnd(e: TouchEvent) {
+		if (!navSwipeActive) return;
+		navSwipeActive = false;
+		const t = e.changedTouches[0];
+		if (!t) return;
+		const dx = t.clientX - navTouchX;
+		const dy = t.clientY - navTouchY;
+		// Großzügiger Hub (60px) + klar horizontal, damit Scrollen nicht navigiert.
+		if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+			const target = dx < 0 ? nav.next : nav.prev;
+			if (target) void goto(`/kassetten/${target.id}`);
 		}
 	}
 
@@ -441,13 +479,44 @@
 			</div>
 		</form>
 	{:else}
-		<article class="space-y-4">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<article class="space-y-4" ontouchstart={onNavTouchStart} ontouchend={onNavTouchEnd}>
+			{#if nav.total > 1}
+				<nav class="flex items-center justify-between gap-2" aria-label="Folgen-Navigation">
+					<a
+						href={nav.prev ? `/kassetten/${nav.prev.id}` : undefined}
+						aria-disabled={!nav.prev}
+						title={nav.prev?.titel}
+						class="flex h-9 items-center gap-1 rounded-full border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 shadow-sm transition active:scale-95 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-200 {nav.prev
+							? 'hover:bg-stone-50 dark:hover:bg-stone-800'
+							: 'pointer-events-none opacity-40'}"
+					>
+						<ChevronLeft size={16} />
+						{nav.prev?.folgeNr ?? ''}
+					</a>
+					<span class="text-xs text-stone-500 dark:text-stone-400">
+						Folge {nav.index + 1} von {nav.total}
+					</span>
+					<a
+						href={nav.next ? `/kassetten/${nav.next.id}` : undefined}
+						aria-disabled={!nav.next}
+						title={nav.next?.titel}
+						class="flex h-9 items-center gap-1 rounded-full border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 shadow-sm transition active:scale-95 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-200 {nav.next
+							? 'hover:bg-stone-50 dark:hover:bg-stone-800'
+							: 'pointer-events-none opacity-40'}"
+					>
+						{nav.next?.folgeNr ?? ''}
+						<ChevronRight size={16} />
+					</a>
+				</nav>
+			{/if}
 			<div
 				class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900"
 			>
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					class="relative aspect-square bg-stone-100 dark:bg-stone-800"
+					data-cover-slider
 					ontouchstart={onCoverTouchStart}
 					ontouchend={onCoverTouchEnd}
 				>
