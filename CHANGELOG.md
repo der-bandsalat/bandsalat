@@ -7,7 +7,17 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Features
+
+- **Folgen-Suche in der Serie**: Suchfeld auf der Serien-Detailseite
+  filtert nach Folgennummer, Label oder Titel (ab 9 Folgen sichtbar).
+
 ### Fixes
+
+- **Zurück-Button merkt sich den Zustand**: Bei In-App-Navigation geht
+  Zurück per Browser-History — Scroll-Position, Sortierung und View der
+  vorherigen Seite bleiben erhalten. Aus der Folgenansicht führt Zurück
+  bei Direkteinstiegen jetzt zur Serienansicht statt zu allen Kassetten.
 
 - **Scan-Limit Bulk-Erfassung**: Das Stunden-Limit für Vision-Scans ist
   jetzt per `SCAN_RATE_LIMIT_PER_HOUR` konfigurierbar und steigt von 30
