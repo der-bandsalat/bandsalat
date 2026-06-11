@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import BrandLogo from './BrandLogo.svelte';
+	import { afterNavigate } from '$app/navigation';
 
 	type Props = {
 		title?: string;
@@ -12,6 +13,23 @@
 	};
 
 	let { title, subtitle, back, children, actions, leading }: Props = $props();
+
+	// Kam der User per In-App-Navigation hierher, geht Zurück über history.back():
+	// der Browser stellt dann Scroll-Position und URL-Zustand (Sortierung, View)
+	// der vorherigen Seite wieder her. Das statische `back`-Ziel bleibt Fallback
+	// für Direkteinstiege (Bookmark, geteilter Link, Reload).
+	let canGoBack = $state(false);
+	afterNavigate(({ from }) => {
+		if (from?.url) canGoBack = true;
+	});
+
+	function onBackClick(e: MouseEvent) {
+		if (!canGoBack) return;
+		// Modifier-Klicks (neuer Tab etc.) normal durchlassen.
+		if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+		e.preventDefault();
+		history.back();
+	}
 </script>
 
 <header
@@ -30,6 +48,7 @@
 			{#if back}
 				<a
 					href={back}
+					onclick={onBackClick}
 					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-700 transition active:scale-90 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
 					aria-label="Zurück"
 				>

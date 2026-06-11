@@ -17,6 +17,7 @@
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import Search from '@lucide/svelte/icons/search';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -68,6 +69,20 @@
 					? 'bg-brand-500'
 					: 'bg-amber-500'
 	);
+
+	// Folgen-Suche innerhalb der Serie (Nummer, Label oder Titel) — rein
+	// clientseitig, Sammlungen sind klein genug.
+	let search = $state('');
+	const filteredItems = $derived.by(() => {
+		const q = search.trim().toLowerCase();
+		if (!q) return d.items;
+		return d.items.filter(
+			(c) =>
+				c.titel.toLowerCase().includes(q) ||
+				(c.folgeNr != null && String(c.folgeNr).includes(q)) ||
+				(c.folgeNrLabel?.toLowerCase().includes(q) ?? false)
+		);
+	});
 </script>
 
 <AppHeader back="/serien">
@@ -460,9 +475,31 @@
 		</section>
 	{/if}
 
-	{#if view === 'grid'}
+	{#if d.items.length > 8}
+		<div class="relative mb-3">
+			<Search
+				size={16}
+				class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+			/>
+			<input
+				type="search"
+				bind:value={search}
+				placeholder="Folge suchen (Nummer oder Titel) …"
+				aria-label="Folge innerhalb der Serie suchen"
+				class="w-full rounded-xl border border-stone-300 bg-white py-2 pl-9 pr-3 text-base shadow-sm dark:border-stone-700 dark:bg-stone-900"
+			/>
+		</div>
+	{/if}
+
+	{#if filteredItems.length === 0 && search.trim()}
+		<p
+			class="rounded-2xl border border-stone-200 bg-white p-6 text-center text-sm text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400"
+		>
+			Keine Folge passt zu „{search.trim()}".
+		</p>
+	{:else if view === 'grid'}
 		<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-			{#each d.items as c, i (c.id)}
+			{#each filteredItems as c, i (c.id)}
 				{@const cover = coverThumbUrl(c, externalFor(c))}
 				<li
 					class="reveal overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-500/10 dark:border-stone-800 dark:bg-stone-900"
@@ -520,12 +557,12 @@
 		</ul>
 	{:else if editMode}
 		<CassetteEditTable
-			items={d.items}
+			items={filteredItems}
 			folgeCovers={data.folgeCovers}
 			mediaGrades={data.mediaGrades}
 			sleeveGrades={data.sleeveGrades}
 		/>
 	{:else}
-		<CassetteTable items={d.items} folgeCovers={data.folgeCovers} />
+		<CassetteTable items={filteredItems} folgeCovers={data.folgeCovers} />
 	{/if}
 </main>

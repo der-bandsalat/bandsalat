@@ -325,7 +325,10 @@
 	let fetchingCover = $state(false);
 </script>
 
-<AppHeader back="/kassetten">
+<!-- Fallback-Ziel ist die Serienansicht (nicht /kassetten) — bei In-App-
+     Navigation übernimmt der AppHeader ohnehin history.back() inkl.
+     Scroll-/Sortier-Wiederherstellung. -->
+<AppHeader back={`/serien/${encodeURIComponent(c.serie)}`}>
 	{#snippet children()}
 		<span class="truncate">{c.serie}{c.folgeNr != null ? ` · ${c.folgeNr}` : ''}</span>
 	{/snippet}
