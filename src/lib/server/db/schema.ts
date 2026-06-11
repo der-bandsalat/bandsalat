@@ -37,6 +37,8 @@ export const cassettes = sqliteTable(
 		format: text('format').notNull().default('cassette').$type<MediaFormat>(),
 		label: text('label'),
 		auflageVariante: text('auflage_variante'),
+		/** Erstauflage der Folge (Original-Pressung, nicht Nachauflage). */
+		erstauflage: integer('erstauflage', { mode: 'boolean' }).notNull().default(false),
 		jahr: integer('jahr'),
 		discogsReleaseId: integer('discogs_release_id'),
 		discogsUrl: text('discogs_url'),

@@ -25,6 +25,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Medal from '@lucide/svelte/icons/medal';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -54,6 +55,22 @@
 	}
 
 	const c = $derived(data.cassette);
+
+	// Erstauflage: Ein-Tap-Toggle ohne Bearbeiten-Modus (PATCH wie Edit-Tabelle).
+	let erstauflageSaving = $state(false);
+	async function toggleErstauflage() {
+		erstauflageSaving = true;
+		try {
+			await fetch(`/api/cassettes/${c.id}`, {
+				method: 'PATCH',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ erstauflage: !c.erstauflage })
+			});
+			await invalidateAll();
+		} finally {
+			erstauflageSaving = false;
+		}
+	}
 
 	// svelte-ignore state_referenced_locally
 	let formState = $state(
@@ -660,6 +677,29 @@
 				>
 					<dt class="text-xs text-stone-500 dark:text-stone-400">Vollständig</dt>
 					<dd>{c.vollstaendig ? 'ja' : 'nein'}</dd>
+				</div>
+				<div class="col-span-2">
+					<button
+						type="button"
+						onclick={toggleErstauflage}
+						disabled={erstauflageSaving}
+						aria-pressed={c.erstauflage}
+						class="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.erstauflage
+							? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40'
+							: 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}"
+					>
+						<span>
+							<span class="block text-xs text-stone-500 dark:text-stone-400">Erstauflage</span>
+							<span class="block">{c.erstauflage ? 'ja' : 'nein'}</span>
+						</span>
+						<span
+							class="flex h-7 w-7 items-center justify-center rounded-full {c.erstauflage
+								? 'bg-amber-500 text-white'
+								: 'bg-stone-100 text-stone-400 dark:bg-stone-800 dark:text-stone-500'}"
+						>
+							<Medal size={14} />
+						</span>
+					</button>
 				</div>
 				{#if c.auflageVariante}
 					<div

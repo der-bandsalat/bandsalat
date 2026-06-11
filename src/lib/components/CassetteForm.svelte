@@ -7,6 +7,7 @@
 		format: string;
 		label: string;
 		auflageVariante: string;
+		erstauflage: boolean;
 		jahr: string;
 		discogsReleaseId: string;
 		discogsUrl: string;
@@ -37,6 +38,7 @@
 			format: 'cassette',
 			label: '',
 			auflageVariante: '',
+			erstauflage: false,
 			jahr: '',
 			discogsReleaseId: '',
 			discogsUrl: '',
@@ -71,6 +73,7 @@
 			format: c.format ?? 'cassette',
 			label: c.label ?? '',
 			auflageVariante: c.auflageVariante ?? '',
+			erstauflage: c.erstauflage ?? false,
 			jahr: c.jahr != null ? String(c.jahr) : '',
 			discogsReleaseId: c.discogsReleaseId != null ? String(c.discogsReleaseId) : '',
 			discogsUrl: c.discogsUrl ?? '',
@@ -96,7 +99,7 @@
 		const fs = emptyFormState();
 		for (const key of Object.keys(fs) as (keyof FormState)[]) {
 			if (v[key] === undefined) continue;
-			if (key === 'originalhuelle' || key === 'vollstaendig') {
+			if (key === 'originalhuelle' || key === 'vollstaendig' || key === 'erstauflage') {
 				(fs[key] as boolean) = v[key] === 'on' || v[key] === 'true';
 			} else if (key === 'rating') {
 				const n = Number(v[key]);
@@ -341,6 +344,13 @@
 			class={inputCls}
 		/>
 	</Field>
+
+	<Toggle
+		name="erstauflage"
+		label="Erstauflage"
+		description="Original-Pressung, keine Nachauflage."
+		bind:checked={formState.erstauflage}
+	/>
 
 	<div class="grid grid-cols-2 gap-2">
 		<Field label="Zustand MC" name="zustandMc" error={fieldErrors?.zustandMc}>

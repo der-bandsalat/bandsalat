@@ -1,0 +1,1 @@
+ALTER TABLE `cassettes` ADD `erstauflage` integer DEFAULT false NOT NULL;

@@ -18,6 +18,7 @@
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Search from '@lucide/svelte/icons/search';
+	import Medal from '@lucide/svelte/icons/medal';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -527,6 +528,14 @@
 									class="absolute left-1.5 top-1.5 rounded-full bg-stone-900/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white"
 								>
 									{c.folgeNrLabel}
+								</span>
+							{/if}
+							{#if c.erstauflage}
+								<span
+									class="absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/90 text-white"
+									title="Erstauflage"
+								>
+									<Medal size={11} />
 								</span>
 							{/if}
 							{#if c.discogsInstanceId}

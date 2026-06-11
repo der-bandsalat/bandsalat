@@ -6,6 +6,7 @@
 	import ImagesIcon from '@lucide/svelte/icons/images';
 	import CloudCheck from '@lucide/svelte/icons/cloud-check';
 	import Cloud from '@lucide/svelte/icons/cloud';
+	import Medal from '@lucide/svelte/icons/medal';
 
 	type Props = {
 		items: Cassette[];
@@ -87,6 +88,14 @@
 									</span>
 								{/if}
 								<span class="truncate font-medium leading-snug">{c.titel}</span>
+								{#if c.erstauflage}
+									<span
+										class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+										title="Erstauflage"
+									>
+										<Medal size={12} />
+									</span>
+								{/if}
 							</div>
 							<div class="truncate text-xs text-stone-500 dark:text-stone-400">
 								{c.serie}<span class="sm:hidden"

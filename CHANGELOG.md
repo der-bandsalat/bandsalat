@@ -11,6 +11,13 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - **Folgen-Suche in der Serie**: Suchfeld auf der Serien-Detailseite
   filtert nach Folgennummer, Label oder Titel (ab 9 Folgen sichtbar).
+- **Erstauflage**: neues Feld pro Kassette (Migration 0015) mit Toggle im
+  Formular, Ein-Tap-Button in der Folgenansicht, Spalte im Desktop-
+  Bearbeitungsmodus und Medaillen-Icon in allen Listen- und Grid-Ansichten.
+- **Zuschneiden direkt nach dem Scan**: Das Scan-Foto kann jetzt im
+  Scanner-Dialog gecroppt werden (Button auf der Vorschau), bevor es an
+  der Kassette gespeichert wird — ohne zweiten KI-Aufruf, ohne Umweg
+  über die Galerie.
 
 ### Fixes
 

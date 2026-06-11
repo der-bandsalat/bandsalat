@@ -51,6 +51,8 @@
 	import Check from '@lucide/svelte/icons/check';
 	import AlertTriangle from '@lucide/svelte/icons/triangle-alert';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import Crop from '@lucide/svelte/icons/crop';
+	import PhotoCropModal from './PhotoCropModal.svelte';
 	import { formatEur } from '$lib/util/format';
 
 	type Props = {
@@ -143,6 +145,16 @@
 		}
 	}
 
+	// Crop direkt nach dem Scan: ersetzt nur das Foto, das beim Speichern
+	// mitgeschickt wird — die erkannten Daten bleiben, kein zweiter API-Call.
+	let cropping = $state(false);
+	function applyCrop(cropped: File) {
+		photoFile = cropped;
+		if (previewUrl) URL.revokeObjectURL(previewUrl);
+		previewUrl = URL.createObjectURL(cropped);
+		cropping = false;
+	}
+
 	function confirm() {
 		if (!extracted) return;
 		onpick({
@@ -213,8 +225,18 @@
 				/>
 			{:else}
 				<div class="space-y-4">
-					<div class="overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
+					<div class="relative overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
 						<img src={previewUrl} alt="Aufnahme" class="max-h-64 w-full object-contain" />
+						{#if !scanning && photoFile}
+							<button
+								type="button"
+								onclick={() => (cropping = true)}
+								class="absolute bottom-2 right-2 flex h-9 items-center gap-1.5 rounded-full bg-stone-900/70 px-3 text-xs font-medium text-white backdrop-blur-sm transition active:scale-95 hover:bg-stone-900/90"
+							>
+								<Crop size={14} />
+								Zuschneiden
+							</button>
+						{/if}
 					</div>
 
 					{#if scanning}
@@ -522,3 +544,7 @@
 		{/if}
 	</div>
 </div>
+
+{#if cropping && photoFile}
+	<PhotoCropModal file={photoFile} onCancel={() => (cropping = false)} onConfirm={applyCrop} />
+{/if}

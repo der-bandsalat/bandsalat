@@ -12,6 +12,7 @@ function cassette(overrides: Partial<Cassette> = {}): Cassette {
 		format: 'cassette',
 		label: 'Europa',
 		auflageVariante: null,
+		erstauflage: false,
 		jahr: 1981,
 		discogsReleaseId: 12345,
 		discogsUrl: null,
