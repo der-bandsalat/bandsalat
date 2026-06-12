@@ -7,6 +7,7 @@
 	import CloudCheck from '@lucide/svelte/icons/cloud-check';
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import Medal from '@lucide/svelte/icons/medal';
+	import { FORMAT_SHORT } from '$lib/format';
 
 	type Props = {
 		items: Cassette[];
@@ -88,6 +89,14 @@
 									</span>
 								{/if}
 								<span class="truncate font-medium leading-snug">{c.titel}</span>
+								{#if c.format && c.format !== 'cassette'}
+									<span
+										class="shrink-0 rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+										title={c.format === 'cd' ? 'CD' : 'Schallplatte'}
+									>
+										{FORMAT_SHORT[c.format]}
+									</span>
+								{/if}
 								{#if c.erstauflage}
 									<span
 										class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"

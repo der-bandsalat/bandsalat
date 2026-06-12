@@ -19,6 +19,7 @@
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Search from '@lucide/svelte/icons/search';
 	import Medal from '@lucide/svelte/icons/medal';
+	import { FORMAT_SHORT } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -528,6 +529,13 @@
 									class="absolute left-1.5 top-1.5 rounded-full bg-stone-900/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white"
 								>
 									{c.folgeNrLabel}
+								</span>
+							{/if}
+							{#if c.format && c.format !== 'cassette'}
+								<span
+									class="absolute bottom-1.5 right-1.5 rounded bg-sky-500/90 px-1 py-0.5 text-[10px] font-semibold text-white"
+								>
+									{FORMAT_SHORT[c.format]}
 								</span>
 							{/if}
 							{#if c.erstauflage}

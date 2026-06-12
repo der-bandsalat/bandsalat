@@ -14,6 +14,7 @@
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import ImagesIcon from '@lucide/svelte/icons/images';
 	import Medal from '@lucide/svelte/icons/medal';
+	import { FORMAT_SHORT } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -337,6 +338,13 @@
 								>
 									<ImagesIcon size={10} />
 									{data.photoCounts[it.id]}
+								</span>
+							{/if}
+							{#if it.format && it.format !== 'cassette'}
+								<span
+									class="absolute right-1 bottom-1 rounded bg-sky-500/90 px-1 py-0.5 text-[10px] font-semibold text-white"
+								>
+									{FORMAT_SHORT[it.format]}
 								</span>
 							{/if}
 							{#if it.erstauflage}

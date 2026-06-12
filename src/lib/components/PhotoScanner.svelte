@@ -12,6 +12,7 @@
 		huellen_zustand?: string;
 		auflage_variante?: string;
 		notiz?: string;
+		format?: string;
 	}
 
 	export interface ScannedDuplicate {

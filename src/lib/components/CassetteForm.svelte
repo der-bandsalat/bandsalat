@@ -28,6 +28,43 @@
 	};
 
 	import type { Cassette } from '$lib/server/db/schema';
+	import type { SearchResult } from '$lib/server/discogs/types';
+	import type { MediaFormat as MediaFormatT } from '$lib/format';
+	import { parseDiscogsTitle } from '$lib/util/discogs-title';
+
+	/** Discogs-Format-Array ("Cassette", "CD", "Vinyl", "LP", …) → unser MediaFormat. */
+	export function formatFromDiscogs(formats: string[] | undefined): MediaFormatT | null {
+		if (!formats || formats.length === 0) return null;
+		const lower = formats.map((f) => f.toLowerCase());
+		if (lower.includes('cassette')) return 'cassette';
+		if (lower.includes('cd')) return 'cd';
+		if (lower.includes('vinyl') || lower.includes('lp')) return 'lp';
+		return null;
+	}
+
+	/**
+	 * Übernimmt einen Discogs-Treffer in den FormState — Discogs schlägt KI:
+	 * Serie, Folgennummer, Titel, Label, Jahr und Format werden überschrieben,
+	 * wenn Discogs sie liefert. Der KI-Scan ist nur noch der Suchbegriff;
+	 * gerade bei schlecht lesbaren Covern (Nummer klein, Serie unter dem
+	 * Titel) sind die Discogs-Angaben verlässlicher und einheitlich
+	 * geschrieben.
+	 */
+	export function applyDiscogsPick(fs: FormState, r: SearchResult): void {
+		fs.discogsReleaseId = String(r.id);
+		fs.discogsUrl = r.uri
+			? new URL(r.uri, 'https://www.discogs.com').toString()
+			: `https://www.discogs.com/release/${r.id}`;
+		fs.discogsCoverUrl = r.cover_image ?? r.thumb ?? '';
+		const parsed = parseDiscogsTitle(r.title);
+		if (parsed.serie) fs.serie = parsed.serie;
+		if (parsed.folgeNr != null) fs.folgeNr = String(parsed.folgeNr);
+		if (parsed.titel) fs.titel = parsed.titel;
+		if (r.label?.[0]) fs.label = r.label[0];
+		if (r.year) fs.jahr = String(r.year);
+		const fmt = formatFromDiscogs(r.format);
+		if (fmt) fs.format = fmt;
+	}
 
 	export function emptyFormState(): FormState {
 		return {

@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import type Anthropic from '@anthropic-ai/sdk';
 import { getAnthropic, scanModel } from './anthropic';
-import { MEDIA_GRADES, SLEEVE_GRADES } from '../db/schema';
+import { MEDIA_FORMATS, MEDIA_GRADES, SLEEVE_GRADES, type MediaFormat } from '../db/schema';
 
 const MAX_DIMENSION = 1024;
 const MAX_OUTPUT_TOKENS = 512;
@@ -17,7 +17,8 @@ Regeln:
 - "seriennummer" ist die gedruckte/eingeprägte Katalognummer (oft 6-stellig, z.B. "115311") — ein anderes Feld als die Folgennummer. Verwechsle die beiden nicht.
 - "titel" enthält NUR den Episodentitel, ohne "Folge X" oder Serien-Namen davor. Behalte die exakte Groß-/Kleinschreibung wie auf dem Cover.
 - "huellen_zustand" ist eine grobe visuelle Einschätzung NUR der Hülle (Knicke, Verfärbungen, Risse). Niemals die MC selbst bewerten. Wenn du keine Hülle siehst, lass es weg.
-- "auflage_variante" nur ausfüllen wenn auf dem Cover ein eindeutiges Merkmal wie "schwarz-gelb Logo", "weißes Cover", "Original Hörspiel zum Film" sichtbar ist.`;
+- "auflage_variante" nur ausfüllen wenn auf dem Cover ein eindeutiges Merkmal wie "schwarz-gelb Logo", "weißes Cover", "Original Hörspiel zum Film" sichtbar ist.
+- "format" nur setzen, wenn der Tonträger-Typ klar erkennbar ist: MC-Hülle/Kassette → "cassette", CD-Jewelcase/Digipak → "cd", LP-/Vinyl-Cover → "lp". Im Zweifel weglassen.`;
 
 const SCAN_TOOL: Anthropic.Tool = {
 	name: 'save_cassette_metadata',
@@ -68,6 +69,12 @@ const SCAN_TOOL: Anthropic.Tool = {
 			notiz: {
 				type: 'string',
 				description: 'Zusätzliche Beobachtungen, max 200 Zeichen.'
+			},
+			format: {
+				type: 'string',
+				enum: [...MEDIA_FORMATS],
+				description:
+					'Tonträger-Typ, nur wenn klar erkennbar: Kassette/MC-Hülle → "cassette", CD-Jewelcase → "cd", LP-/Vinyl-Cover → "lp".'
 			}
 		},
 		required: []
@@ -85,6 +92,7 @@ export interface ExtractedMetadata {
 	huellen_zustand?: string;
 	auflage_variante?: string;
 	notiz?: string;
+	format?: MediaFormat;
 }
 
 export interface ScanResult {
@@ -189,7 +197,8 @@ export async function scanCassettePhoto(buf: Buffer): Promise<ScanResult> {
 		seriennummer: raw.seriennummer?.trim() || undefined,
 		huellen_zustand: validateGrade(raw.huellen_zustand),
 		auflage_variante: raw.auflage_variante?.trim() || undefined,
-		notiz: raw.notiz?.trim().slice(0, 200) || undefined
+		notiz: raw.notiz?.trim().slice(0, 200) || undefined,
+		format: (MEDIA_FORMATS as readonly string[]).includes(raw.format ?? '') ? raw.format : undefined
 	};
 
 	return {

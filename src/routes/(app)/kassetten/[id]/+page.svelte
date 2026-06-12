@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CassetteForm, {
+		applyDiscogsPick,
 		formStateFromCassette,
 		formStateFromValues
 	} from '$lib/components/CassetteForm.svelte';
@@ -89,13 +90,8 @@
 	);
 
 	function applyDiscogs(r: SearchResult) {
-		formState.discogsReleaseId = String(r.id);
-		formState.discogsUrl = r.uri
-			? new URL(r.uri, 'https://www.discogs.com').toString()
-			: `https://www.discogs.com/release/${r.id}`;
-		formState.discogsCoverUrl = r.cover_image ?? r.thumb ?? '';
-		if (!formState.label && r.label?.[0]) formState.label = r.label[0];
-		if (!formState.jahr && r.year) formState.jahr = String(r.year);
+		// Discogs schlägt KI — überschreibt Serie/Folge/Titel/Label/Jahr/Format.
+		applyDiscogsPick(formState, r);
 		showSearch = false;
 	}
 
