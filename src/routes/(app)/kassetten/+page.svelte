@@ -15,7 +15,7 @@
 	import ImagesIcon from '@lucide/svelte/icons/images';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS, shouldShowFormatBadge } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -27,11 +27,9 @@
 
 	const view = $derived((page.url.searchParams.get('view') ?? 'grid') as 'grid' | 'table');
 
-	// Format-Badges: bei gemischten Listen trägt JEDE Folge ihr Badge (auch MC),
-	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer.
 	const mixedFormats = $derived(new Set(data.items.map((i) => i.format ?? 'cassette')).size > 1);
 	const showFormatBadge = (it: { format: string | null }) =>
-		Boolean(it.format) && (data.formatBadgesAlways || mixedFormats || it.format !== 'cassette');
+		shouldShowFormatBadge(it.format, { always: data.formatBadgesAlways, mixed: mixedFormats });
 
 	function toggleEdit() {
 		editMode = !editMode;

@@ -236,9 +236,14 @@
 		if (!file) return;
 		const small = await downscaleImage(file);
 		if (small !== file) {
-			const dt = new DataTransfer();
-			dt.items.add(small);
-			input.files = dt.files;
+			try {
+				const dt = new DataTransfer();
+				dt.items.add(small);
+				input.files = dt.files;
+			} catch {
+				// DataTransfer nicht verfügbar/Zuweisung verweigert → Original
+				// bleibt im Input; der Server lehnt höchstens >12 MiB sauber ab.
+			}
 		}
 	}
 </script>

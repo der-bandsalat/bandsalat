@@ -21,3 +21,14 @@ export const FORMAT_SHORT: Record<MediaFormat, string> = {
 export function formatShort(fmt: string | null | undefined): string {
 	return FORMAT_SHORT[(fmt || 'cassette') as MediaFormat] ?? 'MC';
 }
+
+/**
+ * Format-Badge-Sichtbarkeit: Einstellung "immer anzeigen" > gemischte Liste
+ * (jede Folge markieren) > nur Abweichler (CD/LP). Eine Stelle für alle Views.
+ */
+export function shouldShowFormatBadge(
+	format: string | null | undefined,
+	opts: { always?: boolean; mixed?: boolean }
+): boolean {
+	return Boolean(format) && (Boolean(opts.always) || Boolean(opts.mixed) || format !== 'cassette');
+}

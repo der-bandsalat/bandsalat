@@ -8,7 +8,7 @@
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_LABELS, FORMAT_SHORT } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT, shouldShowFormatBadge } from '$lib/format';
 
 	type Props = {
 		items: Cassette[];
@@ -27,12 +27,9 @@
 		return folgeCovers[`${c.serie}|${c.folgeNr}`] ?? null;
 	}
 
-	// Format-Badges: bei gemischten Listen trägt JEDE Folge ihr Badge (auch MC),
-	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer. Die
-	// Einstellung "Format immer anzeigen" übersteuert die Auto-Logik.
 	const mixedFormats = $derived(new Set(items.map((i) => i.format ?? 'cassette')).size > 1);
 	const showFormatBadge = (c: Cassette) =>
-		Boolean(c.format) && (alwaysFormatBadges || mixedFormats || c.format !== 'cassette');
+		shouldShowFormatBadge(c.format, { always: alwaysFormatBadges, mixed: mixedFormats });
 </script>
 
 <div

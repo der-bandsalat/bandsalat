@@ -73,13 +73,16 @@
 				});
 				if (cancelled) return;
 				cropper = new Cropper(img, {});
-				// cropper-canvas hat per Default nur min-height 100px → explizit
-				// auf 100% setzen, damit das Bild den ganzen Modal-Body nutzt.
+				// cropper-canvas absolut in den (relative) Container spannen.
+				// height:100% reicht NICHT: am Desktop hat das Modal h-auto, der
+				// Container nur min-height — Prozent-Höhen rechnen gegen die
+				// explizite Eltern-Höhe (= auto) und kollabieren, der Canvas fiel
+				// auf sein eingebautes ~100px-Minimum zurück (Mini-Crop am Desktop).
 				const cc = cropper.getCropperCanvas() as HTMLElement | null;
 				if (cc) {
 					cc.style.display = 'block';
-					cc.style.width = '100%';
-					cc.style.height = '100%';
+					cc.style.position = 'absolute';
+					cc.style.inset = '0';
 				}
 				await tick();
 				applyRatio(ratio);

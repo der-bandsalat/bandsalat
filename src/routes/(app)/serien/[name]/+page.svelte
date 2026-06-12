@@ -20,7 +20,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS, shouldShowFormatBadge } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -102,10 +102,8 @@
 					(c.folgeNrLabel?.toLowerCase().includes(q) ?? false))
 		);
 	});
-	// Badge an jeder Folge, sobald die Serie gemischt ist; sonst nur Abweichler.
-	// Die Einstellung "Format immer anzeigen" übersteuert die Auto-Logik.
 	const showFormatBadge = (c: { format: string | null }) =>
-		Boolean(c.format) && (data.formatBadgesAlways || mixedFormats || c.format !== 'cassette');
+		shouldShowFormatBadge(c.format, { always: data.formatBadgesAlways, mixed: mixedFormats });
 </script>
 
 <AppHeader back="/serien">

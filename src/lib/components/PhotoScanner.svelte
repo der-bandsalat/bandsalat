@@ -97,14 +97,21 @@
 		return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(cents / 100);
 	}
 
+	// Schutz gegen schnelle Doppel-Auswahl: nur die jüngste Auswahl gewinnt,
+	// sonst überschreibt ein noch laufendes Downscale der ersten Datei den
+	// State der zweiten.
+	let pickEpoch = 0;
 	async function onFileChange(e: Event) {
 		const target = e.target as HTMLInputElement;
 		const file = target.files?.[0];
 		if (!file) return;
+		const myPick = ++pickEpoch;
 		reset();
 		// Downscale vor allem Weiteren: kleinerer Scan-Upload, flüssigeres
 		// Croppen, und das gespeicherte Foto bleibt unterm 12-MiB-Limit.
-		photoFile = await downscaleImage(file);
+		const small = await downscaleImage(file);
+		if (myPick !== pickEpoch) return;
+		photoFile = small;
 		previewUrl = URL.createObjectURL(photoFile);
 		void scan();
 	}
