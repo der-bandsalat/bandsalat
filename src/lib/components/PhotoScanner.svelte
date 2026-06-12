@@ -55,6 +55,7 @@
 	import Crop from '@lucide/svelte/icons/crop';
 	import PhotoCropModal from './PhotoCropModal.svelte';
 	import { formatEur } from '$lib/util/format';
+	import { downscaleImage } from '$lib/util/image';
 
 	type Props = {
 		onpick: (payload: ScanPayload) => void;
@@ -96,13 +97,15 @@
 		return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(cents / 100);
 	}
 
-	function onFileChange(e: Event) {
+	async function onFileChange(e: Event) {
 		const target = e.target as HTMLInputElement;
 		const file = target.files?.[0];
 		if (!file) return;
 		reset();
-		photoFile = file;
-		previewUrl = URL.createObjectURL(file);
+		// Downscale vor allem Weiteren: kleinerer Scan-Upload, flüssigeres
+		// Croppen, und das gespeicherte Foto bleibt unterm 12-MiB-Limit.
+		photoFile = await downscaleImage(file);
+		previewUrl = URL.createObjectURL(photoFile);
 		void scan();
 	}
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import { downscaleImage } from '$lib/util/image';
 	import Camera from '@lucide/svelte/icons/camera';
 	import Image from '@lucide/svelte/icons/image';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -92,11 +93,11 @@
 	}
 
 	function handlePick(role: PhotoRole) {
-		return (e: Event) => {
+		return async (e: Event) => {
 			const input = e.currentTarget as HTMLInputElement;
 			const file = input.files?.[0];
-			if (file) cropTarget = { file, role };
 			input.value = '';
+			if (file) cropTarget = { file: await downscaleImage(file), role };
 		};
 	}
 
@@ -132,7 +133,13 @@
 			const file = new File([blob], `edit-${photo.id}.jpg`, {
 				type: blob.type || 'image/jpeg'
 			});
-			cropTarget = { file, role: photo.role, replacePhotoId: photo.id };
+			// Alt-Bestände können noch riesige Originale sein — fürs Re-Croppen
+			// genügt die Archivgröße, und der Crop-Editor bleibt flüssig.
+			cropTarget = {
+				file: await downscaleImage(file),
+				role: photo.role,
+				replacePhotoId: photo.id
+			};
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : 'Bearbeiten fehlgeschlagen.';
 		} finally {

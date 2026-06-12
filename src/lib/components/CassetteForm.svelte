@@ -168,6 +168,7 @@
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { FORMAT_LABELS, formatShort, type MediaFormat } from '$lib/format';
+	import { downscaleImage } from '$lib/util/image';
 
 	type Props = {
 		serien: string[];
@@ -225,6 +226,20 @@
 		formState.discogsReleaseId = '';
 		formState.discogsUrl = '';
 		formState.discogsCoverUrl = '';
+	}
+
+	// Foto-Auswahl direkt im Input verkleinern (DataTransfer ersetzt die Datei),
+	// damit das multipart-Submit das Downscale mitnimmt.
+	async function onPhotoChange(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const small = await downscaleImage(file);
+		if (small !== file) {
+			const dt = new DataTransfer();
+			dt.items.add(small);
+			input.files = dt.files;
+		}
 	}
 </script>
 
@@ -565,7 +580,14 @@
 			>
 				<Camera size={20} />
 				<span>Foto aufnehmen oder auswählen</span>
-				<input type="file" name="photo" accept="image/*" capture="environment" class="hidden" />
+				<input
+					type="file"
+					name="photo"
+					accept="image/*"
+					capture="environment"
+					class="hidden"
+					onchange={onPhotoChange}
+				/>
 			</label>
 		</Field>
 	{/if}

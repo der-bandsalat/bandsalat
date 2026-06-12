@@ -7,6 +7,16 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.6.1] – 2026-06-13
+
+### Features
+
+- **Fotos werden vor dem Upload verkleinert** (max. 2048 px, clientseitig):
+  keine „Foto zu groß"-Fehler mehr bei modernen Handy-Kameras, deutlich
+  flüssigeres Zuschneiden auf schwächeren Geräten und weniger mobiles
+  Datenvolumen beim Erfassen. Gilt für Scan, Galerie-Upload, Re-Crop und
+  das Formular-Foto; bei Fehlern geht das Original unverändert raus.
+
 ## [0.6.0] – 2026-06-13
 
 ### Features
