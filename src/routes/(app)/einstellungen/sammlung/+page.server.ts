@@ -2,8 +2,10 @@ import { redirect } from '@sveltejs/kit';
 import {
 	getEnabledFormats,
 	isDreiAuflagenEnabled,
+	isFormatBadgesAlways,
 	setDreiAuflagenEnabled,
-	setEnabledFormats
+	setEnabledFormats,
+	setFormatBadgesAlways
 } from '$lib/server/settings';
 import { MEDIA_FORMATS, type MediaFormat } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
@@ -12,7 +14,8 @@ export const load: PageServerLoad = () => {
 	return {
 		enabledFormats: getEnabledFormats(),
 		allFormats: MEDIA_FORMATS,
-		dreiAuflagenEnabled: isDreiAuflagenEnabled()
+		dreiAuflagenEnabled: isDreiAuflagenEnabled(),
+		formatBadgesAlways: isFormatBadgesAlways()
 	};
 };
 
@@ -31,6 +34,7 @@ export const actions: Actions = {
 	saveFeatures: async ({ request }) => {
 		const form = await request.formData();
 		setDreiAuflagenEnabled(form.get('drei_auflagen') === 'on');
+		setFormatBadgesAlways(form.get('format_badges_always') === 'on');
 		throw redirect(303, '/einstellungen/sammlung?saved=features');
 	}
 };

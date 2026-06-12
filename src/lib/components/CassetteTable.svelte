@@ -16,9 +16,11 @@
 		folgeCovers?: Record<string, ExternalCoverPaths>;
 		/** Map cassetteId -> Anzahl Fotos (für Mehrfach-Foto-Badge). */
 		photoCounts?: Record<string, number>;
+		/** Einstellung "Format immer anzeigen" — übersteuert die Auto-Logik. */
+		alwaysFormatBadges?: boolean;
 	};
 
-	let { items, folgeCovers = {}, photoCounts = {} }: Props = $props();
+	let { items, folgeCovers = {}, photoCounts = {}, alwaysFormatBadges = false }: Props = $props();
 
 	function externalFor(c: Cassette): ExternalCoverPaths | null {
 		if (c.folgeNr == null) return null;
@@ -26,10 +28,11 @@
 	}
 
 	// Format-Badges: bei gemischten Listen trägt JEDE Folge ihr Badge (auch MC),
-	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer.
+	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer. Die
+	// Einstellung "Format immer anzeigen" übersteuert die Auto-Logik.
 	const mixedFormats = $derived(new Set(items.map((i) => i.format ?? 'cassette')).size > 1);
 	const showFormatBadge = (c: Cassette) =>
-		Boolean(c.format) && (mixedFormats || c.format !== 'cassette');
+		Boolean(c.format) && (alwaysFormatBadges || mixedFormats || c.format !== 'cassette');
 </script>
 
 <div

@@ -13,6 +13,7 @@ const KEY_ANTHROPIC_API_KEY = 'app_setting:anthropic_api_key';
 const KEY_SCAN_MODEL = 'app_setting:scan_model';
 const KEY_ENABLED_FORMATS = 'app_setting:enabled_formats';
 const KEY_DREI_AUFLAGEN_ENABLED = 'app_setting:drei_auflagen_enabled';
+const KEY_FORMAT_BADGES_ALWAYS = 'app_setting:format_badges_always';
 const KEY_BRAND_LOGO_VARIANT = 'app_setting:brand_logo_variant';
 const KEY_BRAND_LOGO_CUSTOM_PATH = 'app_setting:brand_logo_custom_path';
 
@@ -97,6 +98,18 @@ export function setEnabledFormats(formats: MediaFormat[]): void {
  * Steuert Sichtbarkeit von Auflagen-Link auf der Serien-Detailseite und
  * Erreichbarkeit der /auflagen-Route.
  */
+/**
+ * Format-Badges (MC/CD/LP) immer an jeder Folge anzeigen — statt der
+ * Auto-Logik, die nur gemischte Listen und Abweichler markiert. Default: aus.
+ */
+export function isFormatBadgesAlways(): boolean {
+	return getMeta(KEY_FORMAT_BADGES_ALWAYS) === '1';
+}
+
+export function setFormatBadgesAlways(value: boolean): void {
+	setMeta(KEY_FORMAT_BADGES_ALWAYS, value ? '1' : null);
+}
+
 export function isDreiAuflagenEnabled(): boolean {
 	return getMeta(KEY_DREI_AUFLAGEN_ENABLED) === '1';
 }

@@ -103,8 +103,9 @@
 		);
 	});
 	// Badge an jeder Folge, sobald die Serie gemischt ist; sonst nur Abweichler.
+	// Die Einstellung "Format immer anzeigen" übersteuert die Auto-Logik.
 	const showFormatBadge = (c: { format: string | null }) =>
-		Boolean(c.format) && (mixedFormats || c.format !== 'cassette');
+		Boolean(c.format) && (data.formatBadgesAlways || mixedFormats || c.format !== 'cassette');
 </script>
 
 <AppHeader back="/serien">
@@ -746,6 +747,10 @@
 			sleeveGrades={data.sleeveGrades}
 		/>
 	{:else}
-		<CassetteTable items={filteredItems} folgeCovers={data.folgeCovers} />
+		<CassetteTable
+			items={filteredItems}
+			folgeCovers={data.folgeCovers}
+			alwaysFormatBadges={data.formatBadgesAlways}
+		/>
 	{/if}
 </main>

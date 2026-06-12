@@ -16,6 +16,8 @@
 	const enabled = $state(new Set<MediaFormat>(data.enabledFormats));
 	// svelte-ignore state_referenced_locally
 	let dreiAuflagen = $state(data.dreiAuflagenEnabled);
+	// svelte-ignore state_referenced_locally
+	let formatBadgesAlways = $state(data.formatBadgesAlways);
 
 	let submittingFormats = $state(false);
 	let submittingFeatures = $state(false);
@@ -176,6 +178,34 @@
 						besessen-Status markieren. Aktiviert den „Auflagen"-Link in der Serien-Detail-Ansicht
 						und die Route
 						<code>/serien/Die drei ???/auflagen</code>.
+					</div>
+				</div>
+			</label>
+
+			<label
+				class="flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 transition"
+				class:border-brand-300={formatBadgesAlways}
+				class:bg-brand-50={formatBadgesAlways}
+				class:dark:border-brand-700={formatBadgesAlways}
+				class:dark:bg-brand-950={formatBadgesAlways}
+				class:border-stone-200={!formatBadgesAlways}
+				class:dark:border-stone-800={!formatBadgesAlways}
+			>
+				<input
+					type="checkbox"
+					name="format_badges_always"
+					bind:checked={formatBadgesAlways}
+					class="h-4 w-4 rounded border-stone-300 text-brand-500 focus:ring-brand-500"
+				/>
+				<CassetteTape
+					size={20}
+					class={formatBadgesAlways ? 'text-brand-600 dark:text-brand-300' : 'text-stone-400'}
+				/>
+				<div class="min-w-0 flex-1">
+					<div class="text-sm font-medium">Format immer anzeigen (MC/CD/LP)</div>
+					<div class="text-xs text-stone-500 dark:text-stone-400">
+						Jede Folge trägt ihr Format-Badge in Listen- und Cover-Ansichten. Ausgeschaltet
+						erscheinen Badges automatisch nur bei gemischten Listen und bei CD/LP.
 					</div>
 				</div>
 			</label>

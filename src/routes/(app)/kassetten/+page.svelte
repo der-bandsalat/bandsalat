@@ -31,7 +31,7 @@
 	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer.
 	const mixedFormats = $derived(new Set(data.items.map((i) => i.format ?? 'cassette')).size > 1);
 	const showFormatBadge = (it: { format: string | null }) =>
-		Boolean(it.format) && (mixedFormats || it.format !== 'cassette');
+		Boolean(it.format) && (data.formatBadgesAlways || mixedFormats || it.format !== 'cassette');
 
 	function toggleEdit() {
 		editMode = !editMode;
@@ -413,6 +413,7 @@
 			items={data.items}
 			folgeCovers={data.folgeCovers}
 			photoCounts={data.photoCounts}
+			alwaysFormatBadges={data.formatBadgesAlways}
 		/>
 	{/if}
 </main>
