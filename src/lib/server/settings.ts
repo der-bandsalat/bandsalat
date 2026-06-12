@@ -14,6 +14,7 @@ const KEY_SCAN_MODEL = 'app_setting:scan_model';
 const KEY_ENABLED_FORMATS = 'app_setting:enabled_formats';
 const KEY_DREI_AUFLAGEN_ENABLED = 'app_setting:drei_auflagen_enabled';
 const KEY_FORMAT_BADGES_ALWAYS = 'app_setting:format_badges_always';
+const KEY_FAVORIT_STAR_THRESHOLD = 'app_setting:favorit_star_threshold';
 const KEY_BRAND_LOGO_VARIANT = 'app_setting:brand_logo_variant';
 const KEY_BRAND_LOGO_CUSTOM_PATH = 'app_setting:brand_logo_custom_path';
 
@@ -108,6 +109,24 @@ export function isFormatBadgesAlways(): boolean {
 
 export function setFormatBadgesAlways(value: boolean): void {
 	setMeta(KEY_FORMAT_BADGES_ALWAYS, value ? '1' : null);
+}
+
+/**
+ * Ab wie vielen Halbsternen (1–10, also 0,5–5 Sterne) eine Folge automatisch
+ * als Favorit zählt — zusätzlich zum manuellen Herz. null = Feature aus.
+ */
+export function getFavoritStarThreshold(): number | null {
+	const raw = getMeta(KEY_FAVORIT_STAR_THRESHOLD);
+	if (!raw) return null;
+	const n = Number.parseInt(raw, 10);
+	return Number.isInteger(n) && n >= 1 && n <= 10 ? n : null;
+}
+
+export function setFavoritStarThreshold(value: number | null): void {
+	setMeta(
+		KEY_FAVORIT_STAR_THRESHOLD,
+		value != null && value >= 1 && value <= 10 ? String(value) : null
+	);
 }
 
 export function isDreiAuflagenEnabled(): boolean {

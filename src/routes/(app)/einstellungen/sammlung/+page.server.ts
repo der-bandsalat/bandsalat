@@ -1,10 +1,12 @@
 import { redirect } from '@sveltejs/kit';
 import {
 	getEnabledFormats,
+	getFavoritStarThreshold,
 	isDreiAuflagenEnabled,
 	isFormatBadgesAlways,
 	setDreiAuflagenEnabled,
 	setEnabledFormats,
+	setFavoritStarThreshold,
 	setFormatBadgesAlways
 } from '$lib/server/settings';
 import { MEDIA_FORMATS, type MediaFormat } from '$lib/server/db/schema';
@@ -15,7 +17,8 @@ export const load: PageServerLoad = () => {
 		enabledFormats: getEnabledFormats(),
 		allFormats: MEDIA_FORMATS,
 		dreiAuflagenEnabled: isDreiAuflagenEnabled(),
-		formatBadgesAlways: isFormatBadgesAlways()
+		formatBadgesAlways: isFormatBadgesAlways(),
+		favoritStarThreshold: getFavoritStarThreshold()
 	};
 };
 
@@ -35,6 +38,13 @@ export const actions: Actions = {
 		const form = await request.formData();
 		setDreiAuflagenEnabled(form.get('drei_auflagen') === 'on');
 		setFormatBadgesAlways(form.get('format_badges_always') === 'on');
+		// Sterne-Schwelle für Auto-Favoriten: nur speichern, wenn aktiviert.
+		if (form.get('favorit_by_rating') === 'on') {
+			const n = Number.parseInt(String(form.get('favorit_threshold') ?? ''), 10);
+			setFavoritStarThreshold(Number.isInteger(n) && n >= 1 && n <= 10 ? n : 9);
+		} else {
+			setFavoritStarThreshold(null);
+		}
 		throw redirect(303, '/einstellungen/sammlung?saved=features');
 	}
 };

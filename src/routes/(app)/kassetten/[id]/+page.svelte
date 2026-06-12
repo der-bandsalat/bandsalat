@@ -30,6 +30,7 @@
 	import Heart from '@lucide/svelte/icons/heart';
 	import { toast } from '$lib/util/toast.svelte';
 	import { formatShort } from '$lib/format';
+	import { isFavorit } from '$lib/favorit';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -63,6 +64,8 @@
 	// Erstauflage/Favorit: Ein-Tap-Toggle ohne Bearbeiten-Modus (PATCH wie Edit-Tabelle).
 	// Ein gemeinsamer Saving-State — verhindert parallele Toggles und Flacker-States.
 	let flagSaving = $state<'erstauflage' | 'favorit' | null>(null);
+	// Favorit über die Sterne-Schwelle (Einstellung) — zusätzlich zum manuellen Herz.
+	const autoFavorit = $derived(!c.favorit && isFavorit(c, data.favoritStarThreshold));
 	async function toggleFlag(field: 'erstauflage' | 'favorit') {
 		if (flagSaving) return;
 		flagSaving = field;
@@ -787,20 +790,23 @@
 						onclick={() => toggleFlag('favorit')}
 						disabled={flagSaving !== null}
 						aria-pressed={c.favorit}
-						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.favorit
+						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.favorit ||
+						autoFavorit
 							? 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40'
 							: 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}"
 					>
 						<span>
 							<span class="block text-xs text-stone-500 dark:text-stone-400">Favorit</span>
-							<span class="block">{c.favorit ? 'ja' : 'nein'}</span>
+							<span class="block">
+								{c.favorit ? 'ja' : autoFavorit ? 'ja · Bewertung' : 'nein'}
+							</span>
 						</span>
 						<span
-							class="flex h-7 w-7 items-center justify-center rounded-full {c.favorit
+							class="flex h-7 w-7 items-center justify-center rounded-full {c.favorit || autoFavorit
 								? 'bg-rose-500 text-white'
 								: 'bg-stone-100 text-stone-400 dark:bg-stone-800 dark:text-stone-500'}"
 						>
-							<Heart size={14} fill={c.favorit ? 'currentColor' : 'none'} />
+							<Heart size={14} fill={c.favorit || autoFavorit ? 'currentColor' : 'none'} />
 						</span>
 					</button>
 				</div>

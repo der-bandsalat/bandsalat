@@ -9,6 +9,7 @@
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
 	import { FORMAT_LABELS, FORMAT_SHORT, shouldShowFormatBadge } from '$lib/format';
+	import { isFavorit } from '$lib/favorit';
 
 	type Props = {
 		items: Cassette[];
@@ -18,9 +19,17 @@
 		photoCounts?: Record<string, number>;
 		/** Einstellung "Format immer anzeigen" — übersteuert die Auto-Logik. */
 		alwaysFormatBadges?: boolean;
+		/** Sterne-Schwelle (Halbsterne), ab der eine Bewertung als Favorit zählt. */
+		favoritThreshold?: number | null;
 	};
 
-	let { items, folgeCovers = {}, photoCounts = {}, alwaysFormatBadges = false }: Props = $props();
+	let {
+		items,
+		folgeCovers = {},
+		photoCounts = {},
+		alwaysFormatBadges = false,
+		favoritThreshold = null
+	}: Props = $props();
 
 	function externalFor(c: Cassette): ExternalCoverPaths | null {
 		if (c.folgeNr == null) return null;
@@ -115,7 +124,7 @@
 										<Medal size={12} />
 									</span>
 								{/if}
-								{#if c.favorit}
+								{#if isFavorit(c, favoritThreshold)}
 									<span
 										class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300"
 										title="Favorit"

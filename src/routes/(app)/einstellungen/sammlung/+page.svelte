@@ -9,6 +9,8 @@
 	import CheckCircle2 from '@lucide/svelte/icons/circle-check-big';
 	import Layers from '@lucide/svelte/icons/layers';
 	import { FORMAT_LABELS, type MediaFormat } from '$lib/format';
+	import { halbsterneLabel } from '$lib/favorit';
+	import HeartIcon from '@lucide/svelte/icons/heart';
 
 	let { data } = $props();
 
@@ -18,6 +20,10 @@
 	let dreiAuflagen = $state(data.dreiAuflagenEnabled);
 	// svelte-ignore state_referenced_locally
 	let formatBadgesAlways = $state(data.formatBadgesAlways);
+	// svelte-ignore state_referenced_locally
+	let favoritByRating = $state(data.favoritStarThreshold != null);
+	// svelte-ignore state_referenced_locally
+	let favoritThreshold = $state(data.favoritStarThreshold ?? 9);
 
 	let submittingFormats = $state(false);
 	let submittingFeatures = $state(false);
@@ -209,6 +215,54 @@
 					</div>
 				</div>
 			</label>
+
+			<div
+				class="rounded-xl border px-3 py-3 transition"
+				class:border-brand-300={favoritByRating}
+				class:bg-brand-50={favoritByRating}
+				class:dark:border-brand-700={favoritByRating}
+				class:dark:bg-brand-950={favoritByRating}
+				class:border-stone-200={!favoritByRating}
+				class:dark:border-stone-800={!favoritByRating}
+			>
+				<label class="flex cursor-pointer items-center gap-3">
+					<input
+						type="checkbox"
+						name="favorit_by_rating"
+						bind:checked={favoritByRating}
+						class="h-4 w-4 rounded border-stone-300 text-brand-500 focus:ring-brand-500"
+					/>
+					<HeartIcon
+						size={20}
+						class={favoritByRating ? 'text-rose-500' : 'text-stone-400'}
+						fill={favoritByRating ? 'currentColor' : 'none'}
+					/>
+					<div class="min-w-0 flex-1">
+						<div class="text-sm font-medium">Bewertung zählt als Favorit</div>
+						<div class="text-xs text-stone-500 dark:text-stone-400">
+							Folgen ab der eingestellten Sterne-Bewertung erscheinen automatisch unter Favoriten
+							und tragen das Herz — zusätzlich zu manuell geherzten.
+						</div>
+					</div>
+				</label>
+				{#if favoritByRating}
+					<div class="mt-3 flex items-center gap-3 pl-7">
+						<input
+							type="range"
+							name="favorit_threshold"
+							min="1"
+							max="10"
+							step="1"
+							bind:value={favoritThreshold}
+							aria-label="Sterne-Schwelle für Favoriten"
+							class="flex-1 accent-rose-500"
+						/>
+						<span class="w-24 shrink-0 text-right text-sm font-medium tabular-nums">
+							ab {halbsterneLabel(favoritThreshold)} ★
+						</span>
+					</div>
+				{/if}
+			</div>
 
 			<button
 				type="submit"

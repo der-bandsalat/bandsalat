@@ -16,6 +16,7 @@
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
 	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS, shouldShowFormatBadge } from '$lib/format';
+	import { isFavorit } from '$lib/favorit';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -375,7 +376,7 @@
 									<Medal size={11} />
 								</span>
 							{/if}
-							{#if it.favorit}
+							{#if isFavorit(it, data.favoritStarThreshold)}
 								<span
 									class="absolute bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500/90 text-white {it.erstauflage
 										? 'left-7'
@@ -412,6 +413,7 @@
 			folgeCovers={data.folgeCovers}
 			photoCounts={data.photoCounts}
 			alwaysFormatBadges={data.formatBadgesAlways}
+			favoritThreshold={data.favoritStarThreshold}
 		/>
 	{/if}
 </main>
