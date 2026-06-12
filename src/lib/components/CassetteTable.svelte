@@ -8,7 +8,7 @@
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_SHORT } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT } from '$lib/format';
 
 	type Props = {
 		items: Cassette[];
@@ -24,6 +24,12 @@
 		if (c.folgeNr == null) return null;
 		return folgeCovers[`${c.serie}|${c.folgeNr}`] ?? null;
 	}
+
+	// Format-Badges: bei gemischten Listen trägt JEDE Folge ihr Badge (auch MC),
+	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer.
+	const mixedFormats = $derived(new Set(items.map((i) => i.format ?? 'cassette')).size > 1);
+	const showFormatBadge = (c: Cassette) =>
+		Boolean(c.format) && (mixedFormats || c.format !== 'cassette');
 </script>
 
 <div
@@ -90,10 +96,13 @@
 									</span>
 								{/if}
 								<span class="truncate font-medium leading-snug">{c.titel}</span>
-								{#if c.format && c.format !== 'cassette'}
+								{#if showFormatBadge(c)}
 									<span
-										class="shrink-0 rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-950 dark:text-sky-300"
-										title={c.format === 'cd' ? 'CD' : 'Schallplatte'}
+										class="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold {c.format ===
+										'cassette'
+											? 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
+											: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'}"
+										title={FORMAT_LABELS[c.format]}
 									>
 										{FORMAT_SHORT[c.format]}
 									</span>

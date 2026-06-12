@@ -15,7 +15,7 @@
 	import ImagesIcon from '@lucide/svelte/icons/images';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_SHORT } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -26,6 +26,12 @@
 	let editMode = $state(false);
 
 	const view = $derived((page.url.searchParams.get('view') ?? 'grid') as 'grid' | 'table');
+
+	// Format-Badges: bei gemischten Listen trägt JEDE Folge ihr Badge (auch MC),
+	// reine MC-Listen bleiben unmarkiert — Abweichler (CD/LP) immer.
+	const mixedFormats = $derived(new Set(data.items.map((i) => i.format ?? 'cassette')).size > 1);
+	const showFormatBadge = (it: { format: string | null }) =>
+		Boolean(it.format) && (mixedFormats || it.format !== 'cassette');
 
 	function toggleEdit() {
 		editMode = !editMode;
@@ -156,6 +162,18 @@
 						<option value="">Alle</option>
 						{#each data.labels as l (l)}
 							<option value={l} selected={data.filter?.label === l}>{l}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="block text-xs">
+					<span class="mb-1 block font-medium text-stone-600 dark:text-stone-400">Format</span>
+					<select
+						name="format"
+						class="w-full rounded-lg border border-stone-300 bg-white px-2 py-2 dark:border-stone-700 dark:bg-stone-900"
+					>
+						<option value="">Alle</option>
+						{#each MEDIA_FORMATS as f (f)}
+							<option value={f} selected={data.filter?.format === f}>{FORMAT_LABELS[f]}</option>
 						{/each}
 					</select>
 				</label>
@@ -341,9 +359,12 @@
 									{data.photoCounts[it.id]}
 								</span>
 							{/if}
-							{#if it.format && it.format !== 'cassette'}
+							{#if showFormatBadge(it)}
 								<span
-									class="absolute right-1 bottom-1 rounded bg-sky-500/90 px-1 py-0.5 text-[10px] font-semibold text-white"
+									class="absolute bottom-1 right-1 rounded px-1 py-0.5 text-[10px] font-semibold text-white {it.format ===
+									'cassette'
+										? 'bg-stone-600/90'
+										: 'bg-sky-500/90'}"
 								>
 									{FORMAT_SHORT[it.format]}
 								</span>

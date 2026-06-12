@@ -20,7 +20,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
-	import { FORMAT_SHORT } from '$lib/format';
+	import { FORMAT_LABELS, FORMAT_SHORT, MEDIA_FORMATS } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
 	import CassetteEditTable from '$lib/components/edit/CassetteEditTable.svelte';
@@ -83,18 +83,28 @@
 	);
 
 	// Folgen-Suche innerhalb der Serie (Nummer, Label oder Titel) — rein
-	// clientseitig, Sammlungen sind klein genug.
+	// clientseitig, Sammlungen sind klein genug. Plus Format-Filter-Chips
+	// bei gemischten Serien (MC/CD/LP).
 	let search = $state('');
+	let formatFilter = $state<string | null>(null);
+	const mixedFormats = $derived(new Set(d.items.map((i) => i.format ?? 'cassette')).size > 1);
+	const presentFormats = $derived(
+		MEDIA_FORMATS.filter((f) => d.items.some((i) => (i.format ?? 'cassette') === f))
+	);
 	const filteredItems = $derived.by(() => {
 		const q = search.trim().toLowerCase();
-		if (!q) return d.items;
 		return d.items.filter(
 			(c) =>
-				c.titel.toLowerCase().includes(q) ||
-				(c.folgeNr != null && String(c.folgeNr).includes(q)) ||
-				(c.folgeNrLabel?.toLowerCase().includes(q) ?? false)
+				(!formatFilter || (c.format ?? 'cassette') === formatFilter) &&
+				(!q ||
+					c.titel.toLowerCase().includes(q) ||
+					(c.folgeNr != null && String(c.folgeNr).includes(q)) ||
+					(c.folgeNrLabel?.toLowerCase().includes(q) ?? false))
 		);
 	});
+	// Badge an jeder Folge, sobald die Serie gemischt ist; sonst nur Abweichler.
+	const showFormatBadge = (c: { format: string | null }) =>
+		Boolean(c.format) && (mixedFormats || c.format !== 'cassette');
 </script>
 
 <AppHeader back="/serien">
@@ -588,19 +598,51 @@
 		</section>
 	{/if}
 
-	{#if d.items.length > 8}
-		<div class="relative mb-3">
-			<Search
-				size={16}
-				class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-			/>
-			<input
-				type="search"
-				bind:value={search}
-				placeholder="Folge suchen (Nummer oder Titel) …"
-				aria-label="Folge innerhalb der Serie suchen"
-				class="w-full rounded-xl border border-stone-300 bg-white py-2 pl-9 pr-3 text-base shadow-sm dark:border-stone-700 dark:bg-stone-900"
-			/>
+	{#if d.items.length > 8 || mixedFormats}
+		<div class="mb-3 space-y-2">
+			{#if d.items.length > 8}
+				<div class="relative">
+					<Search
+						size={16}
+						class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+					/>
+					<input
+						type="search"
+						bind:value={search}
+						placeholder="Folge suchen (Nummer oder Titel) …"
+						aria-label="Folge innerhalb der Serie suchen"
+						class="w-full rounded-xl border border-stone-300 bg-white py-2 pl-9 pr-3 text-base shadow-sm dark:border-stone-700 dark:bg-stone-900"
+					/>
+				</div>
+			{/if}
+			{#if mixedFormats}
+				<div class="flex flex-wrap gap-1.5">
+					<button
+						type="button"
+						onclick={() => (formatFilter = null)}
+						aria-pressed={formatFilter === null}
+						class="rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-95 {formatFilter ===
+						null
+							? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+							: 'border-stone-300 bg-white text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'}"
+					>
+						Alle
+					</button>
+					{#each presentFormats as f (f)}
+						<button
+							type="button"
+							onclick={() => (formatFilter = formatFilter === f ? null : f)}
+							aria-pressed={formatFilter === f}
+							class="rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-95 {formatFilter ===
+							f
+								? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+								: 'border-stone-300 bg-white text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'}"
+						>
+							{FORMAT_LABELS[f]}
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -642,9 +684,12 @@
 									{c.folgeNrLabel}
 								</span>
 							{/if}
-							{#if c.format && c.format !== 'cassette'}
+							{#if showFormatBadge(c)}
 								<span
-									class="absolute bottom-1.5 right-1.5 rounded bg-sky-500/90 px-1 py-0.5 text-[10px] font-semibold text-white"
+									class="absolute bottom-1.5 right-1.5 rounded px-1 py-0.5 text-[10px] font-semibold text-white {c.format ===
+									'cassette'
+										? 'bg-stone-600/90'
+										: 'bg-sky-500/90'}"
 								>
 									{FORMAT_SHORT[c.format]}
 								</span>
