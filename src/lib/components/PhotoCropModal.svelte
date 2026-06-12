@@ -33,6 +33,17 @@
 		return () => URL.revokeObjectURL(url);
 	});
 
+	// Body-Scroll sperren, solange das Modal offen ist — sonst scrollt auf
+	// iOS/Android die Seite hinter dem Crop-Editor mit (Rubber-Banding fühlt
+	// sich wie ein "springendes" Crop-Tool an).
+	$effect(() => {
+		const prev = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		return () => {
+			document.body.style.overflow = prev;
+		};
+	});
+
 	$effect(() => {
 		if (!imgUrl || !containerEl) return;
 		let cancelled = false;
