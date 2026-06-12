@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, isNull, like, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like } from 'drizzle-orm';
+import { folgeNrNullsLast } from './cassettes';
 import { db } from './client';
 import { appMeta, cassettes, type Cassette } from './schema';
 import { getMeta, setMeta } from './meta';
@@ -185,10 +186,9 @@ export function getSeriesDetail(name: string, kind?: GroupKind): SeriesDetail | 
 			.select()
 			.from(cassettes)
 			.where(eq(cassettes.folder, name))
-			// Sonderfolgen (folgeNr NULL) ans Ende — SQLite sortiert NULL sonst zuerst.
 			.orderBy(
 				asc(cassettes.serie),
-				sql`${cassettes.folgeNr} IS NULL`,
+				folgeNrNullsLast,
 				asc(cassettes.folgeNr),
 				asc(cassettes.createdAt)
 			)
@@ -218,8 +218,7 @@ export function getSeriesDetail(name: string, kind?: GroupKind): SeriesDetail | 
 		.select()
 		.from(cassettes)
 		.where(and(eq(cassettes.serie, name), isNull(cassettes.folder)))
-		// Sonderfolgen (folgeNr NULL) ans Ende — SQLite sortiert NULL sonst zuerst.
-		.orderBy(sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr), asc(cassettes.createdAt))
+		.orderBy(folgeNrNullsLast, asc(cassettes.folgeNr), asc(cassettes.createdAt))
 		.all();
 	const target = getSeriesTarget(name);
 	if (items.length === 0 && !target) return null;

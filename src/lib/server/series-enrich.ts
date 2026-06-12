@@ -14,12 +14,12 @@
  * Singleton-Job wie der Discogs-Bulk-Push: ein Lauf gleichzeitig, Status wird
  * von der Serien-Seite gepollt.
  */
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { db } from './db/client';
 import { cassettes, type Cassette } from './db/schema';
 import { getFolgeCover, upsertFolgeCover } from './db/folge-cover';
 import { getFolgeSynopsis, upsertFolgeSynopsis } from './db/folge-synopsis';
-import { updateCassette } from './db/cassettes';
+import { folgeNrNullsLast, updateCassette } from './db/cassettes';
 import { fetchAndCacheCover, fetchMetadata, isSupported } from './sources/dreimetadaten';
 import { extractSynopsisFromReleaseId } from './sources/discogs-notes';
 import { cacheCoverFromUrl } from './discogs/cover-cache';
@@ -89,7 +89,7 @@ export function startSeriesEnrich(opts: {
 		.select()
 		.from(cassettes)
 		.where(and(eq(cassettes.serie, opts.serie), isNull(cassettes.folder)))
-		.orderBy(sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr))
+		.orderBy(folgeNrNullsLast, asc(cassettes.folgeNr))
 		.all();
 
 	state = {

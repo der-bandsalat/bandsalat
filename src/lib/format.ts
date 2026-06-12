@@ -16,3 +16,8 @@ export const FORMAT_SHORT: Record<MediaFormat, string> = {
 	lp: 'LP',
 	cd: 'CD'
 };
+
+/** Kurzlabel mit Fallback ("MC") — für UI-Beschriftungen wie "Zustand MC". */
+export function formatShort(fmt: string | null | undefined): string {
+	return FORMAT_SHORT[(fmt || 'cassette') as MediaFormat] ?? 'MC';
+}

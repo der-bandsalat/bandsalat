@@ -29,7 +29,7 @@
 	import Medal from '@lucide/svelte/icons/medal';
 	import Heart from '@lucide/svelte/icons/heart';
 	import { toast } from '$lib/util/toast.svelte';
-	import { FORMAT_SHORT } from '$lib/format';
+	import { formatShort } from '$lib/format';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -61,12 +61,11 @@
 	const c = $derived(data.cassette);
 
 	// Erstauflage/Favorit: Ein-Tap-Toggle ohne Bearbeiten-Modus (PATCH wie Edit-Tabelle).
-	let erstauflageSaving = $state(false);
-	let favoritSaving = $state(false);
+	// Ein gemeinsamer Saving-State — verhindert parallele Toggles und Flacker-States.
+	let flagSaving = $state<'erstauflage' | 'favorit' | null>(null);
 	async function toggleFlag(field: 'erstauflage' | 'favorit') {
-		const saving =
-			field === 'erstauflage' ? () => (erstauflageSaving = true) : () => (favoritSaving = true);
-		saving();
+		if (flagSaving) return;
+		flagSaving = field;
 		try {
 			await fetch(`/api/cassettes/${c.id}`, {
 				method: 'PATCH',
@@ -75,8 +74,7 @@
 			});
 			await invalidateAll();
 		} finally {
-			erstauflageSaving = false;
-			favoritSaving = false;
+			flagSaving = null;
 		}
 	}
 
@@ -738,7 +736,7 @@
 					class="rounded-xl border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-900"
 				>
 					<dt class="text-xs text-stone-500 dark:text-stone-400">
-						Zustand {FORMAT_SHORT[c.format ?? 'cassette'] ?? 'MC'}
+						Zustand {formatShort(c.format)}
 					</dt>
 					<dd>{c.zustandMc ?? '—'}</dd>
 				</div>
@@ -764,7 +762,7 @@
 					<button
 						type="button"
 						onclick={() => toggleFlag('erstauflage')}
-						disabled={erstauflageSaving}
+						disabled={flagSaving !== null}
 						aria-pressed={c.erstauflage}
 						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.erstauflage
 							? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40'
@@ -787,7 +785,7 @@
 					<button
 						type="button"
 						onclick={() => toggleFlag('favorit')}
-						disabled={favoritSaving}
+						disabled={flagSaving !== null}
 						aria-pressed={c.favorit}
 						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.favorit
 							? 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40'

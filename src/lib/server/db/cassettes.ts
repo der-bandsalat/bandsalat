@@ -17,6 +17,13 @@ import type { SearchFilter } from '$lib/validation/cassette';
 
 const nowIso = () => new Date().toISOString();
 
+/**
+ * Sortier-Fragment: Sonderfolgen (folgeNr NULL) ans Ende — SQLite sortiert
+ * NULL bei ASC sonst zuerst. Überall verwenden, wo nach Folge sortiert wird,
+ * damit sich alle Ansichten (Serie, Listen, Swipe-Navigation) einig sind.
+ */
+export const folgeNrNullsLast = sql`${cassettes.folgeNr} IS NULL`;
+
 export function listCassettes(filter: SearchFilter = {}): Cassette[] {
 	const conds: SQL[] = [];
 
@@ -57,11 +64,11 @@ export function listCassettes(filter: SearchFilter = {}): Cassette[] {
 				return [asc(cassettes.createdAt)];
 			// Sonderfolgen (folgeNr NULL) jeweils ans Ende der Serie.
 			case 'serie':
-				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), folgeNrNullsLast, asc(cassettes.folgeNr)];
 			case 'folge_asc':
-				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), folgeNrNullsLast, asc(cassettes.folgeNr)];
 			case 'folge_desc':
-				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, desc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), folgeNrNullsLast, desc(cassettes.folgeNr)];
 			case 'jahr_desc':
 				return [desc(cassettes.jahr), asc(cassettes.serie)];
 			case 'jahr_asc':

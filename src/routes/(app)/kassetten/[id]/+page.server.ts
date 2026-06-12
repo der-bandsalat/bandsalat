@@ -4,6 +4,7 @@ import {
 	distinctFolders,
 	distinctLabels,
 	distinctSerien,
+	folgeNrNullsLast,
 	getCassette,
 	updateCassette
 } from '$lib/server/db/cassettes';
@@ -13,7 +14,7 @@ import {
 	deleteCassettePhoto,
 	listCassettePhotos
 } from '$lib/server/db/cassette-photos';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 import { db } from '$lib/server/db/client';
 import { cassettePhotos, cassettes } from '$lib/server/db/schema';
 import { cacheCoverFromUrl } from '$lib/server/discogs/cover-cache';
@@ -47,7 +48,7 @@ export const load: PageServerLoad = ({ params }) => {
 		.select({ id: cassettes.id, folgeNr: cassettes.folgeNr, titel: cassettes.titel })
 		.from(cassettes)
 		.where(eq(cassettes.serie, cassette.serie))
-		.orderBy(sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr), asc(cassettes.createdAt))
+		.orderBy(folgeNrNullsLast, asc(cassettes.folgeNr), asc(cassettes.createdAt))
 		.all();
 	const navIdx = siblings.findIndex((s) => s.id === cassette.id);
 	return {

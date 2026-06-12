@@ -167,7 +167,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
-	import { FORMAT_LABELS, FORMAT_SHORT, type MediaFormat } from '$lib/format';
+	import { FORMAT_LABELS, formatShort, type MediaFormat } from '$lib/format';
 
 	type Props = {
 		serien: string[];
@@ -204,7 +204,7 @@
 	const PRICE_PATTERN = '[0-9]+([.,][0-9]{0,2})?';
 
 	// "MC" / "CD" / "LP" je nach gewähltem Format — für Zustands-Labels etc.
-	const fmtShort = $derived(FORMAT_SHORT[(formState.format || 'cassette') as MediaFormat] ?? 'MC');
+	const fmtShort = $derived(formatShort(formState.format));
 
 	// Sonderfolgen-Modus: keine numerische Folgennummer, nur ein Label
 	// ("Fan-Edition", "3er-Box" …). Solche Folgen landen in den Listen am Ende.
@@ -214,6 +214,12 @@
 		sonderfolge = !sonderfolge;
 		if (sonderfolge) formState.folgeNr = '';
 	}
+	// Discogs-Override (oder Scan) kann eine Folgennummer setzen, während der
+	// Sonderfolgen-Modus aktiv ist — dann zurück in den Normal-Modus, sonst
+	// steckt die Nummer unsichtbar im Formular.
+	$effect(() => {
+		if (sonderfolge && formState.folgeNr) sonderfolge = false;
+	});
 
 	function clearDiscogsLink() {
 		formState.discogsReleaseId = '';
