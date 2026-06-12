@@ -6,6 +6,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import BarChart3 from '@lucide/svelte/icons/chart-column';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import Heart from '@lucide/svelte/icons/heart';
 	import BrandTitle from '$lib/components/BrandTitle.svelte';
 
 	let { data } = $props();
@@ -45,6 +46,14 @@
 		<BrandTitle />
 	{/snippet}
 	{#snippet actions()}
+		<a
+			href="/favoriten"
+			class="flex h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+			title="Favoriten"
+			aria-label="Favoriten"
+		>
+			<Heart size={18} />
+		</a>
 		<a
 			href="/wantlist"
 			class="flex h-9 w-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
