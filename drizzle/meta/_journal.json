@@ -113,6 +113,13 @@
       "when": 1781202977475,
       "tag": "0015_new_pet_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1781300855283,
+      "tag": "0016_soft_corsair",
+      "breakpoints": true
     }
   ]
 }

@@ -69,6 +69,8 @@ export const cassettes = sqliteTable(
 			.$type<'auto' | 'photo' | 'discogs' | 'external'>(),
 		/** Bewertung in Halbsternen: 1 = ½ Stern, 10 = 5 Sterne, null = nicht bewertet. */
 		rating: integer('rating'),
+		/** Herz-Markierung: Lieblingsfolge, unabhängig von der Sterne-Bewertung. */
+		favorit: integer('favorit', { mode: 'boolean' }).notNull().default(false),
 		review: text('review'),
 		notiz: text('notiz'),
 		coverFotoPath: text('cover_foto_path'),

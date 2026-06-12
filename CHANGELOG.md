@@ -7,6 +7,37 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.5.0] – 2026-06-12
+
+Feedback-Runde 2 von Max — Pakete 1 und 2 plus Favoriten.
+
+### Features
+
+- **Favoriten ❤️**: Folgen lassen sich per Herz-Button in der
+  Folgenansicht markieren (Migration 0017/`favorit`); Herz-Badge in
+  allen Listen- und Grid-Ansichten, Spalte im Bearbeitungsmodus.
+- **Discogs schlägt KI**: Ein ausgewählter Discogs-Treffer überschreibt
+  jetzt Serie, Folgennummer, Titel, Label, Jahr und Format — der
+  KI-Scan liefert nur noch den Suchbegriff. Behebt Verwechslungen bei
+  schlecht lesbaren Covern (z.B. Serie unterhalb des Folgentitels).
+- **Sonderfolgen**: eigener Button im Formular (Bezeichnung statt
+  Folgennummer); Folgen ohne Nummer erscheinen in allen Listen am Ende
+  statt am Anfang.
+- **Format-Erkennung MC/CD/LP**: Der Scanner erkennt den Tonträger-Typ
+  und setzt die Auswahl; Discogs-Treffer liefern das Format als
+  Fallback. CDs und LPs tragen in Listen und Grids ein Format-Badge,
+  und die Beschriftungen folgen dem Format („Zustand CD" statt
+  „Zustand MC", Hüllen-Texte entsprechend).
+
+### Fixes
+
+- **Alte/neue App-Version im Wechsel**: HTML wird nicht mehr vom
+  Browser gecacht und die App erkennt neue Deploys selbst — behebt
+  instabilen Login und Misch-Zustände nach Updates.
+- **Bearbeiten-Feedback**: Nach dem Speichern einer bestehenden Folge
+  gibt es jetzt den grünen Erfolgs-Toast und die Ansicht wechselt
+  zurück.
+
 ## [0.4.2] – 2026-06-11
 
 ### Fixes

@@ -23,6 +23,7 @@
 		folder: string;
 		auflageId: string;
 		rating: number | null;
+		favorit: boolean;
 		review: string;
 		notiz: string;
 	};
@@ -91,6 +92,7 @@
 			folder: '',
 			auflageId: '',
 			rating: null,
+			favorit: false,
 			review: '',
 			notiz: ''
 		};
@@ -126,6 +128,7 @@
 			folder: c.folder ?? '',
 			auflageId: c.auflageId ?? '',
 			rating: c.rating ?? null,
+			favorit: c.favorit ?? false,
 			review: c.review ?? '',
 			notiz: c.notiz ?? ''
 		};
@@ -136,7 +139,12 @@
 		const fs = emptyFormState();
 		for (const key of Object.keys(fs) as (keyof FormState)[]) {
 			if (v[key] === undefined) continue;
-			if (key === 'originalhuelle' || key === 'vollstaendig' || key === 'erstauflage') {
+			if (
+				key === 'originalhuelle' ||
+				key === 'vollstaendig' ||
+				key === 'erstauflage' ||
+				key === 'favorit'
+			) {
 				(fs[key] as boolean) = v[key] === 'on' || v[key] === 'true';
 			} else if (key === 'rating') {
 				const n = Number(v[key]);
@@ -430,6 +438,10 @@
 		description="Original-Pressung, keine Nachauflage."
 		bind:checked={formState.erstauflage}
 	/>
+
+	<!-- Favorit wird über den Herz-Button in der Folgenansicht gesetzt; hier nur
+	     mitschicken, damit das Speichern des Formulars das Herz nicht zurücksetzt. -->
+	<input type="hidden" name="favorit" value={formState.favorit ? 'on' : ''} />
 
 	<div class="grid grid-cols-2 gap-2">
 		<Field label={`Zustand ${fmtShort}`} name="zustandMc" error={fieldErrors?.zustandMc}>

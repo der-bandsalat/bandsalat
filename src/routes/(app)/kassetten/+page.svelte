@@ -14,6 +14,7 @@
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import ImagesIcon from '@lucide/svelte/icons/images';
 	import Medal from '@lucide/svelte/icons/medal';
+	import Heart from '@lucide/svelte/icons/heart';
 	import { FORMAT_SHORT } from '$lib/format';
 	import InlineRating from '$lib/components/InlineRating.svelte';
 	import CassetteTable from '$lib/components/CassetteTable.svelte';
@@ -353,6 +354,16 @@
 									title="Erstauflage"
 								>
 									<Medal size={11} />
+								</span>
+							{/if}
+							{#if it.favorit}
+								<span
+									class="absolute bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500/90 text-white {it.erstauflage
+										? 'left-7'
+										: 'left-1'}"
+									title="Favorit"
+								>
+									<Heart size={11} fill="currentColor" />
 								</span>
 							{/if}
 						</div>

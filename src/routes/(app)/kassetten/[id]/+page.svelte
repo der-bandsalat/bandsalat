@@ -27,6 +27,7 @@
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Medal from '@lucide/svelte/icons/medal';
+	import Heart from '@lucide/svelte/icons/heart';
 	import { toast } from '$lib/util/toast.svelte';
 	import { FORMAT_SHORT } from '$lib/format';
 	import type { SearchResult } from '$lib/server/discogs/types';
@@ -59,19 +60,23 @@
 
 	const c = $derived(data.cassette);
 
-	// Erstauflage: Ein-Tap-Toggle ohne Bearbeiten-Modus (PATCH wie Edit-Tabelle).
+	// Erstauflage/Favorit: Ein-Tap-Toggle ohne Bearbeiten-Modus (PATCH wie Edit-Tabelle).
 	let erstauflageSaving = $state(false);
-	async function toggleErstauflage() {
-		erstauflageSaving = true;
+	let favoritSaving = $state(false);
+	async function toggleFlag(field: 'erstauflage' | 'favorit') {
+		const saving =
+			field === 'erstauflage' ? () => (erstauflageSaving = true) : () => (favoritSaving = true);
+		saving();
 		try {
 			await fetch(`/api/cassettes/${c.id}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ erstauflage: !c.erstauflage })
+				body: JSON.stringify({ [field]: !c[field] })
 			});
 			await invalidateAll();
 		} finally {
 			erstauflageSaving = false;
+			favoritSaving = false;
 		}
 	}
 
@@ -755,13 +760,13 @@
 					<dt class="text-xs text-stone-500 dark:text-stone-400">Vollständig</dt>
 					<dd>{c.vollstaendig ? 'ja' : 'nein'}</dd>
 				</div>
-				<div class="col-span-2">
+				<div>
 					<button
 						type="button"
-						onclick={toggleErstauflage}
+						onclick={() => toggleFlag('erstauflage')}
 						disabled={erstauflageSaving}
 						aria-pressed={c.erstauflage}
-						class="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.erstauflage
+						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.erstauflage
 							? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40'
 							: 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}"
 					>
@@ -775,6 +780,29 @@
 								: 'bg-stone-100 text-stone-400 dark:bg-stone-800 dark:text-stone-500'}"
 						>
 							<Medal size={14} />
+						</span>
+					</button>
+				</div>
+				<div>
+					<button
+						type="button"
+						onclick={() => toggleFlag('favorit')}
+						disabled={favoritSaving}
+						aria-pressed={c.favorit}
+						class="flex h-full w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] disabled:opacity-60 {c.favorit
+							? 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40'
+							: 'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}"
+					>
+						<span>
+							<span class="block text-xs text-stone-500 dark:text-stone-400">Favorit</span>
+							<span class="block">{c.favorit ? 'ja' : 'nein'}</span>
+						</span>
+						<span
+							class="flex h-7 w-7 items-center justify-center rounded-full {c.favorit
+								? 'bg-rose-500 text-white'
+								: 'bg-stone-100 text-stone-400 dark:bg-stone-800 dark:text-stone-500'}"
+						>
+							<Heart size={14} fill={c.favorit ? 'currentColor' : 'none'} />
 						</span>
 					</button>
 				</div>

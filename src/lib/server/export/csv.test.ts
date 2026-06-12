@@ -28,6 +28,7 @@ function cassette(overrides: Partial<Cassette> = {}): Cassette {
 		auflageId: null,
 		coverSource: 'auto',
 		rating: null,
+		favorit: false,
 		review: null,
 		notiz: null,
 		coverFotoPath: null,

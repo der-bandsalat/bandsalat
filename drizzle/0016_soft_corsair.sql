@@ -1,0 +1,1 @@
+ALTER TABLE `cassettes` ADD `favorit` integer DEFAULT false NOT NULL;

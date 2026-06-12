@@ -7,6 +7,7 @@
 	import CloudCheck from '@lucide/svelte/icons/cloud-check';
 	import Cloud from '@lucide/svelte/icons/cloud';
 	import Medal from '@lucide/svelte/icons/medal';
+	import Heart from '@lucide/svelte/icons/heart';
 	import { FORMAT_SHORT } from '$lib/format';
 
 	type Props = {
@@ -103,6 +104,14 @@
 										title="Erstauflage"
 									>
 										<Medal size={12} />
+									</span>
+								{/if}
+								{#if c.favorit}
+									<span
+										class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300"
+										title="Favorit"
+									>
+										<Heart size={12} fill="currentColor" />
 									</span>
 								{/if}
 							</div>

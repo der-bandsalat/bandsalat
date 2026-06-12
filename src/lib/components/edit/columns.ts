@@ -60,7 +60,8 @@ export const EDITABLE_COLUMNS: EditableColumn[] = [
 	{ key: 'kaufpreisCent', label: 'Kaufpreis', widget: 'euro', width: 'min-w-28' },
 	{ key: 'kaufort', label: 'Kaufort', widget: 'text', width: 'min-w-40' },
 	{ key: 'folder', label: 'Ordner', widget: 'text', width: 'min-w-36' },
-	{ key: 'rating', label: 'Bewertung', widget: 'rating', width: 'min-w-32' }
+	{ key: 'rating', label: 'Bewertung', widget: 'rating', width: 'min-w-32' },
+	{ key: 'favorit', label: 'Favorit', widget: 'checkbox', width: 'min-w-24' }
 ];
 
 export const EDITABLE_COLUMN_MAP: Record<string, EditableColumn> = Object.fromEntries(

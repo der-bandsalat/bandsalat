@@ -58,6 +58,7 @@ export const CassetteFormSchema = z.object({
 	folder: emptyAsNull(z.string().trim().max(80)),
 	auflageId: emptyAsNull(z.string().trim().max(120)),
 	rating: emptyAsNull(z.coerce.number().int().min(1).max(10)),
+	favorit: checkboxBool,
 	review: emptyAsNull(z.string().trim().max(2000)),
 	notiz: emptyAsNull(z.string().trim().max(2000))
 });
@@ -90,6 +91,7 @@ export const CassetteUpdateSchema = CassetteFormSchema.pick({
 	kaufort: true,
 	folder: true,
 	rating: true,
+	favorit: true,
 	review: true,
 	notiz: true
 }).partial();
