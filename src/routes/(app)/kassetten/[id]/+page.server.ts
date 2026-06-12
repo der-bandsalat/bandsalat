@@ -387,9 +387,12 @@ export const actions: Actions = {
 				sourceUrl: `https://dreimetadaten.de/data/Serie/${existing.folgeNr.toString().padStart(3, '0')}/metadata.json`
 			});
 		}
-		// Aktive Cover-Quelle direkt auf 'external' setzen — der User klickte
-		// schließlich auf "hol's von dreimetadaten".
-		updateCassette(existing.id, { coverSource: 'external' });
+		// Cover-Quelle nur umstellen, wenn KEIN eigenes Foto existiert — sonst
+		// bleibt das eigene Foto die Anzeige und das geholte Cover ist nur eine
+		// zusätzliche Quelle im Slider (Feedback von Max: eigene Fotos behalten).
+		if (!existing.coverFotoPath) {
+			updateCassette(existing.id, { coverSource: 'external' });
+		}
 		throw redirect(303, `/kassetten/${existing.id}`);
 	},
 

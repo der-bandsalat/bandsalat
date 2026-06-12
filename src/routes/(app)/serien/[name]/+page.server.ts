@@ -15,6 +15,9 @@ import { discogs, DiscogsError } from '$lib/server/discogs/client';
 import { isDreiAuflagenEnabled } from '$lib/server/settings';
 import { getAllFolgeCoversMap } from '$lib/server/db/folge-cover';
 import { MEDIA_GRADES, SLEEVE_GRADES } from '$lib/server/db/schema';
+import { getEnrichStatus, resetEnrichStatus, startSeriesEnrich } from '$lib/server/series-enrich';
+import { isSupported as isDreiSupported } from '$lib/server/sources/dreimetadaten';
+import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
 import type { Actions, PageServerLoad } from './$types';
 import { ensureEditor } from '$lib/server/auth/guard';
 
@@ -29,11 +32,38 @@ export const load: PageServerLoad = ({ params, url }) => {
 		dreiAuflagenEnabled: isDreiAuflagenEnabled(),
 		folgeCovers: Object.fromEntries(getAllFolgeCoversMap()),
 		mediaGrades: MEDIA_GRADES,
-		sleeveGrades: SLEEVE_GRADES
+		sleeveGrades: SLEEVE_GRADES,
+		enrichStatus: getEnrichStatus(),
+		// Quellen-Verfügbarkeit für die Massenaktion-Buttons
+		enrichSources: {
+			dreimetadaten: isDreiSupported(name),
+			discogs: Boolean(getDiscogsToken() && getDiscogsUsername())
+		}
 	};
 };
 
 export const actions: Actions = {
+	startEnrich: async ({ request, params, locals }) => {
+		ensureEditor(locals);
+		const serie = decodeURIComponent(params.name);
+		const form = await request.formData();
+		const synopses = form.get('synopses') === 'on';
+		const covers = form.get('covers') === 'on';
+		try {
+			const status = startSeriesEnrich({ serie, synopses, covers });
+			return { enrichStarted: true, enrichStatus: status };
+		} catch (e) {
+			return fail(409, {
+				enrichError: e instanceof Error ? e.message : 'Massenaktion fehlgeschlagen.'
+			});
+		}
+	},
+
+	resetEnrich: async ({ locals }) => {
+		ensureEditor(locals);
+		return { enrichReset: true, enrichStatus: resetEnrichStatus() };
+	},
+
 	uploadLogo: async ({ request, params, locals }) => {
 		ensureEditor(locals);
 		const serie = decodeURIComponent(params.name);

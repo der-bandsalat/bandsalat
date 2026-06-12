@@ -37,6 +37,15 @@
 	let targetSubmitting = $state(false);
 	let showLogoMenu = $state(false);
 	let showTargetMenu = $state(false);
+	let showEnrichMenu = $state(false);
+	let enrichSubmitting = $state(false);
+
+	// Massenaktion: solange der Job läuft, Status alle 2s nachladen.
+	$effect(() => {
+		if (!data.enrichStatus.running) return;
+		const t = setInterval(() => invalidateAll(), 2000);
+		return () => clearInterval(t);
+	});
 
 	function externalFor(c: { serie: string; folgeNr: number | null }): ExternalCoverPaths | null {
 		if (c.folgeNr == null) return null;
@@ -210,6 +219,19 @@
 					>
 						Ordner
 					</span>
+				{/if}
+				{#if d.kind === 'serie' && (data.enrichSources.dreimetadaten || data.enrichSources.discogs)}
+					<button
+						type="button"
+						onclick={() => (showEnrichMenu = !showEnrichMenu)}
+						class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium transition active:scale-95 {showEnrichMenu ||
+						data.enrichStatus.running
+							? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-300'
+							: 'border-stone-300 bg-white text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'}"
+					>
+						<Sparkles size={10} class="inline" />
+						{data.enrichStatus.running ? 'Massenaktion läuft…' : 'Massenaktion'}
+					</button>
 				{/if}
 				{#if d.withRelease > 0}
 					<span
@@ -452,6 +474,94 @@
 					</p>
 				{/if}
 			</div>
+		</section>
+	{/if}
+
+	{#if showEnrichMenu || data.enrichStatus.running || data.enrichStatus.finishedAt}
+		{@const es = data.enrichStatus}
+		<section
+			class="mb-4 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-800 dark:bg-stone-900"
+		>
+			<h2 class="mb-1 text-sm font-semibold">Massenaktion: Klappentexte & Cover holen</h2>
+			<p class="mb-3 text-xs text-stone-500 dark:text-stone-400">
+				Holt fehlende Klappentexte und Cover für alle Folgen der Serie —
+				{#if data.enrichSources.dreimetadaten}von dreimetadaten.de{/if}{#if data.enrichSources.dreimetadaten && data.enrichSources.discogs}
+					und{/if}
+				{#if data.enrichSources.discogs}von Discogs (verknüpfte Folgen){/if}. Bereits vorhandene
+				Daten und eigene Fotos bleiben unangetastet.
+			</p>
+
+			{#if es.running || es.finishedAt}
+				<div class="mb-3 space-y-2">
+					<div class="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+						<div
+							class="h-full bg-brand-500 transition-[width]"
+							style:width={`${es.total > 0 ? Math.round((es.done / es.total) * 100) : 0}%`}
+						></div>
+					</div>
+					<div class="text-xs text-stone-600 dark:text-stone-300">
+						{es.done}/{es.total}
+						{#if es.current}
+							· {es.current}{/if}
+						· {es.succeeded} geholt · {es.skipped} übersprungen
+						{#if es.failed > 0}
+							· <span class="text-rose-600 dark:text-rose-400">{es.failed} Fehler</span>{/if}
+					</div>
+					{#if es.errors.length > 0}
+						<ul
+							class="max-h-24 space-y-0.5 overflow-y-auto text-[11px] text-rose-600 dark:text-rose-400"
+						>
+							{#each es.errors as err (err.at + err.label)}
+								<li>{err.label}: {err.message}</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if !es.running}
+						<form method="POST" action="?/resetEnrich" use:enhance class="inline">
+							<button
+								class="text-xs text-stone-500 underline hover:text-stone-700 dark:hover:text-stone-300"
+							>
+								Status ausblenden
+							</button>
+						</form>
+					{/if}
+				</div>
+			{/if}
+
+			{#if !es.running}
+				<form
+					method="POST"
+					action="?/startEnrich"
+					use:enhance={() => {
+						enrichSubmitting = true;
+						return ({ update }) => update().finally(() => (enrichSubmitting = false));
+					}}
+					class="flex flex-wrap items-center gap-3"
+				>
+					<label class="flex items-center gap-1.5 text-sm">
+						<input type="checkbox" name="synopses" checked class="accent-brand-500" />
+						Klappentexte
+					</label>
+					<label class="flex items-center gap-1.5 text-sm">
+						<input type="checkbox" name="covers" checked class="accent-brand-500" />
+						Cover
+					</label>
+					<button
+						type="submit"
+						disabled={enrichSubmitting}
+						class="rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+					>
+						Für alle Folgen holen
+					</button>
+				</form>
+				{#if form?.enrichError}
+					<p
+						class="mt-2 rounded-lg bg-rose-50 px-2 py-1 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+					>
+						{form.enrichError}
+					</p>
+				{/if}
+			{/if}
 		</section>
 	{/if}
 
