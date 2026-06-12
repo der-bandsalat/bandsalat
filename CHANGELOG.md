@@ -7,6 +7,24 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.6.0] – 2026-06-13
+
+### Features
+
+- **Massenaktion auf der Serien-Seite**: Klappentexte und Cover für alle
+  Folgen einer Serie auf einmal holen (dreimetadaten.de für „Die drei ???",
+  Discogs für verknüpfte Folgen) — mit Fortschrittsanzeige. Bereits
+  vorhandene Daten werden übersprungen, eigene Fotos bleiben die Anzeige.
+- Auch das einzelne Cover-Holen stellt die Cover-Quelle nur noch um,
+  wenn kein eigenes Foto existiert.
+
+### Fixes (Audit)
+
+- Sonderfolgen-Modus im Formular schaltet sich selbst ab, wenn ein
+  Discogs-Treffer eine Folgennummer liefert.
+- Erstauflage-/Favorit-Toggle: kein paralleles Doppel-Tippen mehr möglich.
+- Sortier- und Format-Logik intern zentralisiert (keine sichtbare Änderung).
+
 ## [0.5.0] – 2026-06-12
 
 Feedback-Runde 2 von Max — Pakete 1 und 2 plus Favoriten.
