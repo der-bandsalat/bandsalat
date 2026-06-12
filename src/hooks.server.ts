@@ -55,6 +55,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 			)
 	});
 
+	// HTML nie cachen — sonst hält der Browser (v.a. iOS Safari) nach einem
+	// Deploy eine alte App-Shell fest, die auf neue Assets zeigt: App wirkt
+	// abwechselnd alt/neu, Login verhält sich instabil. Die gehashten Assets
+	// unter /_app/immutable bleiben davon unberührt (lange cachebar).
+	if (
+		response.headers.get('content-type')?.startsWith('text/html') &&
+		!response.headers.has('cache-control')
+	) {
+		response.headers.set('cache-control', 'no-cache');
+	}
+
 	// Security-Header: Defense-in-Depth zusätzlich zu Caddy. CSP ist relativ
 	// streng — inline-Scripts brauchen wir nur für den Theme-Switcher in
 	// app.html (mit nonce wäre sauberer, hier 'unsafe-inline' für Pragmatismus).

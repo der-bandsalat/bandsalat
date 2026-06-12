@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, like } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { db } from './client';
 import { appMeta, cassettes, type Cassette } from './schema';
 import { getMeta, setMeta } from './meta';
@@ -185,7 +185,13 @@ export function getSeriesDetail(name: string, kind?: GroupKind): SeriesDetail | 
 			.select()
 			.from(cassettes)
 			.where(eq(cassettes.folder, name))
-			.orderBy(asc(cassettes.serie), asc(cassettes.folgeNr), asc(cassettes.createdAt))
+			// Sonderfolgen (folgeNr NULL) ans Ende — SQLite sortiert NULL sonst zuerst.
+			.orderBy(
+				asc(cassettes.serie),
+				sql`${cassettes.folgeNr} IS NULL`,
+				asc(cassettes.folgeNr),
+				asc(cassettes.createdAt)
+			)
 			.all();
 		if (folderItems.length > 0) {
 			return {
@@ -212,7 +218,8 @@ export function getSeriesDetail(name: string, kind?: GroupKind): SeriesDetail | 
 		.select()
 		.from(cassettes)
 		.where(and(eq(cassettes.serie, name), isNull(cassettes.folder)))
-		.orderBy(asc(cassettes.folgeNr), asc(cassettes.createdAt))
+		// Sonderfolgen (folgeNr NULL) ans Ende — SQLite sortiert NULL sonst zuerst.
+		.orderBy(sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr), asc(cassettes.createdAt))
 		.all();
 	const target = getSeriesTarget(name);
 	if (items.length === 0 && !target) return null;

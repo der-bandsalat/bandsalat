@@ -26,6 +26,8 @@
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Medal from '@lucide/svelte/icons/medal';
+	import { toast } from '$lib/util/toast.svelte';
+	import { FORMAT_SHORT } from '$lib/format';
 	import type { SearchResult } from '$lib/server/discogs/types';
 
 	let { data, form } = $props();
@@ -418,7 +420,15 @@
 			enctype="multipart/form-data"
 			use:enhance={() => {
 				submitting = true;
-				return ({ update }) => update().finally(() => (submitting = false));
+				return ({ result, update }) =>
+					update().finally(() => {
+						submitting = false;
+						// Erfolgreiches Speichern: zurück in die Ansicht + sichtbares Feedback.
+						if (result.type === 'redirect') {
+							editing = false;
+							toast.push('Änderungen gespeichert', { tone: 'success' });
+						}
+					});
 			}}
 		>
 			<CassetteForm
@@ -726,7 +736,9 @@
 				<div
 					class="rounded-xl border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-900"
 				>
-					<dt class="text-xs text-stone-500 dark:text-stone-400">Zustand MC</dt>
+					<dt class="text-xs text-stone-500 dark:text-stone-400">
+						Zustand {FORMAT_SHORT[c.format ?? 'cassette'] ?? 'MC'}
+					</dt>
 					<dd>{c.zustandMc ?? '—'}</dd>
 				</div>
 				<div

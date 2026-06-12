@@ -55,12 +55,13 @@ export function listCassettes(filter: SearchFilter = {}): Cassette[] {
 		switch (filter.sort) {
 			case 'created_asc':
 				return [asc(cassettes.createdAt)];
+			// Sonderfolgen (folgeNr NULL) jeweils ans Ende der Serie.
 			case 'serie':
-				return [asc(cassettes.serie), asc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr)];
 			case 'folge_asc':
-				return [asc(cassettes.serie), asc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, asc(cassettes.folgeNr)];
 			case 'folge_desc':
-				return [asc(cassettes.serie), desc(cassettes.folgeNr)];
+				return [asc(cassettes.serie), sql`${cassettes.folgeNr} IS NULL`, desc(cassettes.folgeNr)];
 			case 'jahr_desc':
 				return [desc(cassettes.jahr), asc(cassettes.serie)];
 			case 'jahr_asc':

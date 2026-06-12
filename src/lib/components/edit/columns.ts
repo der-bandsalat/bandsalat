@@ -40,8 +40,9 @@ export const EDITABLE_COLUMNS: EditableColumn[] = [
 	{ key: 'jahr', label: 'Jahr', widget: 'number', width: 'min-w-20' },
 	{ key: 'seriennummer', label: 'Seriennr.', widget: 'text', width: 'min-w-36' },
 	{
+		// "Medium" statt "MC" — die Tabelle kann MC/CD/LP gemischt enthalten.
 		key: 'zustandMc',
-		label: 'Zustand MC',
+		label: 'Zustand Medium',
 		widget: 'select',
 		width: 'min-w-44',
 		optionSource: 'media'

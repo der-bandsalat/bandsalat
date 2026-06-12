@@ -121,7 +121,8 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { FORMAT_LABELS, type MediaFormat } from '$lib/format';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import { FORMAT_LABELS, FORMAT_SHORT, type MediaFormat } from '$lib/format';
 
 	type Props = {
 		serien: string[];
@@ -156,6 +157,18 @@
 		'w-full appearance-none rounded-xl border border-stone-300 bg-white px-3 py-3 pr-9 text-base shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 dark:border-stone-700 dark:bg-stone-900 dark:focus:ring-brand-900';
 
 	const PRICE_PATTERN = '[0-9]+([.,][0-9]{0,2})?';
+
+	// "MC" / "CD" / "LP" je nach gewähltem Format — für Zustands-Labels etc.
+	const fmtShort = $derived(FORMAT_SHORT[(formState.format || 'cassette') as MediaFormat] ?? 'MC');
+
+	// Sonderfolgen-Modus: keine numerische Folgennummer, nur ein Label
+	// ("Fan-Edition", "3er-Box" …). Solche Folgen landen in den Listen am Ende.
+	// svelte-ignore state_referenced_locally
+	let sonderfolge = $state(!formState.folgeNr && Boolean(formState.folgeNrLabel));
+	function toggleSonderfolge() {
+		sonderfolge = !sonderfolge;
+		if (sonderfolge) formState.folgeNr = '';
+	}
 
 	function clearDiscogsLink() {
 		formState.discogsReleaseId = '';
@@ -194,34 +207,63 @@
 	</Field>
 
 	<div class="grid grid-cols-3 gap-2">
-		<div class="col-span-1">
-			<Field label="Folge" name="folgeNr" error={fieldErrors?.folgeNr}>
-				<input
-					name="folgeNr"
-					type="number"
-					inputmode="numeric"
-					min="0"
-					bind:value={formState.folgeNr}
-					class={inputCls}
-				/>
-			</Field>
-		</div>
-		<div class="col-span-2">
-			<Field
-				label="Folge-Label"
-				name="folgeNrLabel"
-				hint="optional"
-				error={fieldErrors?.folgeNrLabel}
-			>
-				<input
+		{#if !sonderfolge}
+			<div class="col-span-1">
+				<Field label="Folge" name="folgeNr" error={fieldErrors?.folgeNr}>
+					<input
+						name="folgeNr"
+						type="number"
+						inputmode="numeric"
+						min="0"
+						bind:value={formState.folgeNr}
+						class={inputCls}
+					/>
+				</Field>
+			</div>
+			<div class="col-span-2">
+				<Field
+					label="Folge-Label"
 					name="folgeNrLabel"
-					bind:value={formState.folgeNrLabel}
-					placeholder="z.B. 100 A/B/C"
-					class={inputCls}
-				/>
-			</Field>
-		</div>
+					hint="optional"
+					error={fieldErrors?.folgeNrLabel}
+				>
+					<input
+						name="folgeNrLabel"
+						bind:value={formState.folgeNrLabel}
+						placeholder="z.B. 100 A/B/C"
+						class={inputCls}
+					/>
+				</Field>
+			</div>
+		{:else}
+			<div class="col-span-3">
+				<Field
+					label="Sonderfolge-Bezeichnung"
+					name="folgeNrLabel"
+					hint="optional"
+					error={fieldErrors?.folgeNrLabel}
+				>
+					<input
+						name="folgeNrLabel"
+						bind:value={formState.folgeNrLabel}
+						placeholder="z.B. Fan-Edition, Adventskalender, 3er-Box…"
+						class={inputCls}
+					/>
+				</Field>
+			</div>
+		{/if}
 	</div>
+	<button
+		type="button"
+		onclick={toggleSonderfolge}
+		aria-pressed={sonderfolge}
+		class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95 {sonderfolge
+			? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-300'
+			: 'border-stone-300 bg-white text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'}"
+	>
+		<Sparkles size={12} />
+		Sonderfolge {sonderfolge ? '— ohne Folgennummer' : ''}
+	</button>
 
 	<Field label="Titel" name="titel" error={fieldErrors?.titel}>
 		<input name="titel" bind:value={formState.titel} required class={inputCls} />
@@ -353,7 +395,7 @@
 	/>
 
 	<div class="grid grid-cols-2 gap-2">
-		<Field label="Zustand MC" name="zustandMc" error={fieldErrors?.zustandMc}>
+		<Field label={`Zustand ${fmtShort}`} name="zustandMc" error={fieldErrors?.zustandMc}>
 			<div class="relative">
 				<select name="zustandMc" bind:value={formState.zustandMc} class={selectCls}>
 					<option value="">—</option>
@@ -387,7 +429,7 @@
 		<Toggle
 			name="originalhuelle"
 			label="Originalhülle"
-			description="Die Hülle stammt zur MC."
+			description={`Die Hülle stammt zur ${fmtShort}.`}
 			bind:checked={formState.originalhuelle}
 		/>
 		<Toggle
