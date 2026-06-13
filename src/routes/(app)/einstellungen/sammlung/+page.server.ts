@@ -10,6 +10,7 @@ import {
 	setFormatBadgesAlways
 } from '$lib/server/settings';
 import { MEDIA_FORMATS, type MediaFormat } from '$lib/server/db/schema';
+import { ensureEditor } from '$lib/server/auth/guard';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () => {
@@ -23,7 +24,8 @@ export const load: PageServerLoad = () => {
 };
 
 export const actions: Actions = {
-	saveFormats: async ({ request }) => {
+	saveFormats: async ({ request, locals }) => {
+		ensureEditor(locals);
 		const form = await request.formData();
 		const picked: MediaFormat[] = [];
 		for (const f of MEDIA_FORMATS) {
@@ -34,7 +36,8 @@ export const actions: Actions = {
 		throw redirect(303, '/einstellungen/sammlung?saved=formate');
 	},
 
-	saveFeatures: async ({ request }) => {
+	saveFeatures: async ({ request, locals }) => {
+		ensureEditor(locals);
 		const form = await request.formData();
 		setDreiAuflagenEnabled(form.get('drei_auflagen') === 'on');
 		setFormatBadgesAlways(form.get('format_badges_always') === 'on');

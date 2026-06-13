@@ -111,6 +111,11 @@
 			{/each}
 		</ul>
 	{:else}
-		<CassetteTable items={data.items} folgeCovers={data.folgeCovers} />
+		<CassetteTable
+			items={data.items}
+			folgeCovers={data.folgeCovers}
+			alwaysFormatBadges={data.formatBadgesAlways}
+			favoritThreshold={data.favoritStarThreshold}
+		/>
 	{/if}
 </main>

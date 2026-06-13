@@ -8,6 +8,7 @@ import {
 } from '$lib/server/settings';
 import { discogs, DiscogsError } from '$lib/server/discogs/client';
 import { hasAnthropic, getAnthropic, scanModel } from '$lib/server/ai/anthropic';
+import { ensureEditor } from '$lib/server/auth/guard';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () => {
@@ -21,7 +22,8 @@ function trimOrNull(value: FormDataEntryValue | null): string | null {
 }
 
 export const actions: Actions = {
-	saveDiscogs: async ({ request }) => {
+	saveDiscogs: async ({ request, locals }) => {
+		ensureEditor(locals);
 		const form = await request.formData();
 		const token = trimOrNull(form.get('discogs_token'));
 		const username = trimOrNull(form.get('discogs_username'));
@@ -34,13 +36,15 @@ export const actions: Actions = {
 		throw redirect(303, '/einstellungen/keys?saved=discogs');
 	},
 
-	clearDiscogs: async () => {
+	clearDiscogs: async ({ locals }) => {
+		ensureEditor(locals);
 		setDiscogsToken(null);
 		setDiscogsUsername(null);
 		throw redirect(303, '/einstellungen/keys?saved=cleared');
 	},
 
-	testDiscogs: async () => {
+	testDiscogs: async ({ locals }) => {
+		ensureEditor(locals);
 		try {
 			const me = await discogs.get<{ username?: string; id?: number }>('/oauth/identity');
 			if (!me?.username) {
@@ -72,7 +76,8 @@ export const actions: Actions = {
 		}
 	},
 
-	saveAnthropic: async ({ request }) => {
+	saveAnthropic: async ({ request, locals }) => {
+		ensureEditor(locals);
 		const form = await request.formData();
 		const key = trimOrNull(form.get('anthropic_key'));
 		const model = trimOrNull(form.get('scan_model'));
@@ -84,13 +89,15 @@ export const actions: Actions = {
 		throw redirect(303, '/einstellungen/keys?saved=anthropic');
 	},
 
-	clearAnthropic: async () => {
+	clearAnthropic: async ({ locals }) => {
+		ensureEditor(locals);
 		setAnthropicKey(null);
 		setScanModel(null);
 		throw redirect(303, '/einstellungen/keys?saved=cleared');
 	},
 
-	testAnthropic: async () => {
+	testAnthropic: async ({ locals }) => {
+		ensureEditor(locals);
 		if (!hasAnthropic()) {
 			return fail(400, { testResult: { ok: false, message: 'ANTHROPIC_API_KEY nicht gesetzt.' } });
 		}

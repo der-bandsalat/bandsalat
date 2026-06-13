@@ -7,6 +7,32 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-06-13
+
+### Features
+
+- **Favoriten ❤️**: Eigene Favoriten-Seite (Herz-Symbol in der Serien-
+  Übersicht, neben der Wunschliste) zeigt alle geherzten Folgen
+  serienübergreifend als Grid oder Liste.
+- **Auto-Favoriten per Bewertung**: Unter Einstellungen → Sammlung kann
+  eine Sterne-Schwelle gesetzt werden — Folgen ab dieser Bewertung gelten
+  automatisch als Favorit, zusätzlich zum manuellen Herz.
+- **Format sichtbar (MC/CD/LP)**: Bei gemischten Listen/Serien trägt jede
+  Folge ihr Format-Badge; per Einstellung „Format immer anzeigen" auch in
+  reinen Sammlungen. Neuer Format-Filter in „Alle Folgen" und Format-Chips
+  in gemischten Serien.
+- **Hilfe & Handbuch**: Vollständiges Benutzer-Handbuch direkt in der App
+  (Einstellungen → Hilfe & Handbuch).
+
+### Fixes
+
+- **Zuschneiden am Desktop**: Der Crop-Bereich füllt jetzt das Fenster
+  statt auf Briefmarkengröße zu kollabieren.
+- **Zuschneiden allgemein**: Der Hintergrund scrollt nicht mehr mit,
+  während der Crop-Editor offen ist.
+- Einstellungs-Änderungen (Formate, Keys, Anzeige) erfordern jetzt
+  mindestens die Editor-Rolle.
+
 ## [0.6.1] – 2026-06-13
 
 ### Features

@@ -4,10 +4,12 @@ import type { PageServerLoad } from './$types';
 
 // GitHub-kompatibler Anker-Slug, damit das Inhaltsverzeichnis (#…-Links)
 // auf die Überschriften zeigt. marked vergibt sonst keine IDs.
+// Unicode-bewusst (\p{L}\p{N}) — sonst fallen Umlaute raus und Anker wie
+// "#hör-log" / "#discogs--ki-schlüssel" zeigen ins Leere.
 const slug = (s: string) =>
 	s
 		.toLowerCase()
-		.replace(/[^\w\s-]/g, '')
+		.replace(/[^\p{L}\p{N}\s-]/gu, '')
 		.replace(/\s/g, '-');
 
 const md = new Marked({ gfm: true });
