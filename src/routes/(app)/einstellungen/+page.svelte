@@ -19,6 +19,7 @@
 	import Users from '@lucide/svelte/icons/users';
 	import Share2 from '@lucide/svelte/icons/share-2';
 	import Type from '@lucide/svelte/icons/type';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 	import Image from '@lucide/svelte/icons/image';
 	import BrandTitle from '$lib/components/BrandTitle.svelte';
 
@@ -267,6 +268,25 @@
 					<span class="block text-sm font-semibold">Erscheinungsbild</span>
 					<span class="block truncate text-xs text-stone-500 dark:text-stone-400">
 						Theme: Hell · Dunkel · HiFi Schwarz-Gold · System
+					</span>
+				</span>
+			</span>
+			<ArrowRight size={18} class="shrink-0 text-stone-400" />
+		</a>
+		<a
+			href="/einstellungen/hilfe"
+			class="flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-[transform,box-shadow] duration-200 active:scale-[0.99] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-500/10 dark:border-stone-800 dark:bg-stone-900"
+		>
+			<span class="flex min-w-0 items-center gap-3">
+				<span
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+				>
+					<BookOpen size={20} />
+				</span>
+				<span class="min-w-0">
+					<span class="block text-sm font-semibold">Hilfe & Handbuch</span>
+					<span class="block truncate text-xs text-stone-500 dark:text-stone-400">
+						Alle Funktionen & Optionen erklärt
 					</span>
 				</span>
 			</span>

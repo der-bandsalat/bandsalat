@@ -1,6 +1,6 @@
 # Bandsalat – Handbuch
 
-*Dein digitaler Katalog für Hörspielkassetten, CDs und Schallplatten.*
+_Dein digitaler Katalog für Hörspielkassetten, CDs und Schallplatten._
 
 Dieses Handbuch beschreibt alle Funktionen und Optionen der App. Es ist nach den
 Bereichen geordnet, wie du sie in der App findest.
@@ -55,13 +55,13 @@ sie wie eine eigenständige App.
 
 Unten (am Handy) bzw. im Kopfbereich findest du die **Hauptnavigation**:
 
-| Symbol | Bereich | Was es ist |
-|---|---|---|
-| 📚 **Serien** | Startseite | Deine Sammlung nach Serien gruppiert |
-| 📋 **Alle** | Listenansicht | Alle Folgen als flache, durchsuchbare Liste |
-| ➕ **Neu** | Anlegen | Eine neue Folge erfassen |
-| 📊 **Stats** | Statistik | Auswertungen deiner Sammlung |
-| ⚙️ **Einst.** | Einstellungen | Konfiguration der App |
+| Symbol        | Bereich       | Was es ist                                  |
+| ------------- | ------------- | ------------------------------------------- |
+| 📚 **Serien** | Startseite    | Deine Sammlung nach Serien gruppiert        |
+| 📋 **Alle**   | Listenansicht | Alle Folgen als flache, durchsuchbare Liste |
+| ➕ **Neu**    | Anlegen       | Eine neue Folge erfassen                    |
+| 📊 **Stats**  | Statistik     | Auswertungen deiner Sammlung                |
+| ⚙️ **Einst.** | Einstellungen | Konfiguration der App                       |
 
 In der **Serien-Übersicht** gibt es oben rechts zusätzlich Schnellzugriffe auf
 ❤️ **Favoriten** und ✨ **Wunschliste**.
@@ -173,7 +173,7 @@ In der Folgenansicht findest du drei Schnell-Markierungen:
 - **Sterne-Bewertung** (½ bis 5 Sterne) – tippe direkt auf die Sterne.
 - **Favorit** (❤️) – ein Tipp markiert die Folge als Lieblingsfolge. Sie taucht
   dann unter [Favoriten](#6-favoriten) auf und trägt überall ein Herz-Badge.
-  (Optional kann eine Folge auch *automatisch* über ihre Sternebewertung zum
+  (Optional kann eine Folge auch _automatisch_ über ihre Sternebewertung zum
   Favoriten werden – siehe [Sammlung](#sammlung).)
 - **Erstauflage** (🥇) – markiert eine Original-Pressung. Sie trägt überall ein
   Medaillen-Badge.
@@ -411,4 +411,4 @@ Unter **Transfer** bzw. den Export-Optionen:
 
 ---
 
-*Fragen oder Wünsche? Sag einfach Bescheid – Bandsalat wächst mit eurem Feedback.*
+_Fragen oder Wünsche? Sag einfach Bescheid – Bandsalat wächst mit eurem Feedback._
