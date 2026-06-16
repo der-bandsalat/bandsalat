@@ -7,6 +7,16 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.7.1] – 2026-06-16
+
+### Features
+
+- **Cover-Quelle für alle Folgen setzen**: Neuer Block in der Serien-
+  Massenaktion — bestimmt mit einem Klick (eigenes Foto / Discogs /
+  dreimetadaten / Automatisch), welches Bild in der Vorschau aller
+  Folgen erscheint. Folgen ohne die gewählte Quelle bleiben unverändert.
+  Der Massenaktion-Bereich ist jetzt für jede Serie erreichbar.
+
 ## [0.7.0] – 2026-06-13
 
 ### Features
