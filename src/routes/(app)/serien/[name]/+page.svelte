@@ -40,6 +40,17 @@
 	let showTargetMenu = $state(false);
 	let showEnrichMenu = $state(false);
 	let enrichSubmitting = $state(false);
+	let coverBulkSubmitting = $state(false);
+
+	function coverSourceLabel(s: string): string {
+		return s === 'photo'
+			? 'Eigenes Foto'
+			: s === 'discogs'
+				? 'Discogs'
+				: s === 'external'
+					? 'dreimetadaten'
+					: 'Automatisch';
+	}
 
 	// Massenaktion: solange der Job läuft, Status alle 2s nachladen.
 	$effect(() => {
@@ -230,7 +241,7 @@
 						Ordner
 					</span>
 				{/if}
-				{#if d.kind === 'serie' && (data.enrichSources.dreimetadaten || data.enrichSources.discogs)}
+				{#if d.kind === 'serie'}
 					<button
 						type="button"
 						onclick={() => (showEnrichMenu = !showEnrichMenu)}
@@ -490,87 +501,166 @@
 	{#if showEnrichMenu || data.enrichStatus.running || data.enrichStatus.finishedAt}
 		{@const es = data.enrichStatus}
 		<section
-			class="mb-4 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-800 dark:bg-stone-900"
+			class="mb-4 space-y-4 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-800 dark:bg-stone-900"
 		>
-			<h2 class="mb-1 text-sm font-semibold">Massenaktion: Klappentexte & Cover holen</h2>
-			<p class="mb-3 text-xs text-stone-500 dark:text-stone-400">
-				Holt fehlende Klappentexte und Cover für alle Folgen der Serie —
-				{#if data.enrichSources.dreimetadaten}von dreimetadaten.de{/if}{#if data.enrichSources.dreimetadaten && data.enrichSources.discogs}
-					und{/if}
-				{#if data.enrichSources.discogs}von Discogs (verknüpfte Folgen){/if}. Bereits vorhandene
-				Daten und eigene Fotos bleiben unangetastet.
-			</p>
-
-			{#if es.running || es.finishedAt}
-				<div class="mb-3 space-y-2">
-					<div class="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
-						<div
-							class="h-full bg-brand-500 transition-[width]"
-							style:width={`${es.total > 0 ? Math.round((es.done / es.total) * 100) : 0}%`}
-						></div>
-					</div>
-					<div class="text-xs text-stone-600 dark:text-stone-300">
-						{es.done}/{es.total}
-						{#if es.current}
-							· {es.current}{/if}
-						· {es.succeeded} geholt · {es.skipped} übersprungen
-						{#if es.failed > 0}
-							· <span class="text-rose-600 dark:text-rose-400">{es.failed} Fehler</span>{/if}
-					</div>
-					{#if es.errors.length > 0}
-						<ul
-							class="max-h-24 space-y-0.5 overflow-y-auto text-[11px] text-rose-600 dark:text-rose-400"
-						>
-							{#each es.errors as err (err.at + err.label)}
-								<li>{err.label}: {err.message}</li>
-							{/each}
-						</ul>
-					{/if}
-					{#if !es.running}
-						<form method="POST" action="?/resetEnrich" use:enhance class="inline">
-							<button
-								class="text-xs text-stone-500 underline hover:text-stone-700 dark:hover:text-stone-300"
-							>
-								Status ausblenden
-							</button>
-						</form>
-					{/if}
-				</div>
-			{/if}
-
-			{#if !es.running}
+			<!-- Block 1: Cover-Quelle für alle Folgen (immer verfügbar) -->
+			<div>
+				<h2 class="mb-1 text-sm font-semibold">Cover-Quelle für alle Folgen</h2>
+				<p class="mb-3 text-xs text-stone-500 dark:text-stone-400">
+					Bestimmt, welches Bild in der Vorschau erscheint. Folgen ohne die gewählte Quelle bleiben
+					unverändert.
+				</p>
 				<form
 					method="POST"
-					action="?/startEnrich"
+					action="?/setCoverSourceBulk"
 					use:enhance={() => {
-						enrichSubmitting = true;
-						return ({ update }) => update().finally(() => (enrichSubmitting = false));
+						coverBulkSubmitting = true;
+						return ({ update }) => update().finally(() => (coverBulkSubmitting = false));
 					}}
-					class="flex flex-wrap items-center gap-3"
+					class="flex flex-wrap gap-2"
 				>
-					<label class="flex items-center gap-1.5 text-sm">
-						<input type="checkbox" name="synopses" checked class="accent-brand-500" />
-						Klappentexte
-					</label>
-					<label class="flex items-center gap-1.5 text-sm">
-						<input type="checkbox" name="covers" checked class="accent-brand-500" />
-						Cover
-					</label>
 					<button
 						type="submit"
-						disabled={enrichSubmitting}
-						class="rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+						name="source"
+						value="photo"
+						disabled={coverBulkSubmitting}
+						class="rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-60 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
 					>
-						Für alle Folgen holen
+						Eigenes Foto
+					</button>
+					<button
+						type="submit"
+						name="source"
+						value="discogs"
+						disabled={coverBulkSubmitting}
+						class="rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-60 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
+					>
+						Discogs
+					</button>
+					{#if data.enrichSources.dreimetadaten}
+						<button
+							type="submit"
+							name="source"
+							value="external"
+							disabled={coverBulkSubmitting}
+							class="rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-60 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
+						>
+							dreimetadaten
+						</button>
+					{/if}
+					<button
+						type="submit"
+						name="source"
+						value="auto"
+						disabled={coverBulkSubmitting}
+						class="rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-60 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+						title="Automatisch: eigenes Foto, sonst Discogs, sonst dreimetadaten"
+					>
+						Automatisch
 					</button>
 				</form>
-				{#if form?.enrichError}
+				{#if form?.coverBulkResult}
+					{@const r = form.coverBulkResult}
+					<p
+						class="mt-2 rounded-lg bg-emerald-50 px-2 py-1 text-xs text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+					>
+						{r.set} Folge{r.set === 1 ? '' : 'n'} auf „{coverSourceLabel(r.source)}" gesetzt{#if r.skipped > 0},
+							{r.skipped} übersprungen (keine Quelle){/if}.
+					</p>
+				{/if}
+				{#if form?.coverBulkError}
 					<p
 						class="mt-2 rounded-lg bg-rose-50 px-2 py-1 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
 					>
-						{form.enrichError}
+						{form.coverBulkError}
 					</p>
 				{/if}
+			</div>
+
+			<!-- Block 2: Klappentexte & Cover holen (nur mit externen Quellen) -->
+			{#if data.enrichSources.dreimetadaten || data.enrichSources.discogs}
+				<div class="border-t border-stone-200 pt-3 dark:border-stone-800">
+					<h2 class="mb-1 text-sm font-semibold">Klappentexte & Cover holen</h2>
+					<p class="mb-3 text-xs text-stone-500 dark:text-stone-400">
+						Holt fehlende Klappentexte und Cover für alle Folgen der Serie —
+						{#if data.enrichSources.dreimetadaten}von dreimetadaten.de{/if}{#if data.enrichSources.dreimetadaten && data.enrichSources.discogs}
+							und{/if}
+						{#if data.enrichSources.discogs}von Discogs (verknüpfte Folgen){/if}. Bereits vorhandene
+						Daten und eigene Fotos bleiben unangetastet.
+					</p>
+
+					{#if es.running || es.finishedAt}
+						<div class="mb-3 space-y-2">
+							<div class="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+								<div
+									class="h-full bg-brand-500 transition-[width]"
+									style:width={`${es.total > 0 ? Math.round((es.done / es.total) * 100) : 0}%`}
+								></div>
+							</div>
+							<div class="text-xs text-stone-600 dark:text-stone-300">
+								{es.done}/{es.total}
+								{#if es.current}
+									· {es.current}{/if}
+								· {es.succeeded} geholt · {es.skipped} übersprungen
+								{#if es.failed > 0}
+									· <span class="text-rose-600 dark:text-rose-400">{es.failed} Fehler</span>{/if}
+							</div>
+							{#if es.errors.length > 0}
+								<ul
+									class="max-h-24 space-y-0.5 overflow-y-auto text-[11px] text-rose-600 dark:text-rose-400"
+								>
+									{#each es.errors as err (err.at + err.label)}
+										<li>{err.label}: {err.message}</li>
+									{/each}
+								</ul>
+							{/if}
+							{#if !es.running}
+								<form method="POST" action="?/resetEnrich" use:enhance class="inline">
+									<button
+										class="text-xs text-stone-500 underline hover:text-stone-700 dark:hover:text-stone-300"
+									>
+										Status ausblenden
+									</button>
+								</form>
+							{/if}
+						</div>
+					{/if}
+
+					{#if !es.running}
+						<form
+							method="POST"
+							action="?/startEnrich"
+							use:enhance={() => {
+								enrichSubmitting = true;
+								return ({ update }) => update().finally(() => (enrichSubmitting = false));
+							}}
+							class="flex flex-wrap items-center gap-3"
+						>
+							<label class="flex items-center gap-1.5 text-sm">
+								<input type="checkbox" name="synopses" checked class="accent-brand-500" />
+								Klappentexte
+							</label>
+							<label class="flex items-center gap-1.5 text-sm">
+								<input type="checkbox" name="covers" checked class="accent-brand-500" />
+								Cover
+							</label>
+							<button
+								type="submit"
+								disabled={enrichSubmitting}
+								class="rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+							>
+								Für alle Folgen holen
+							</button>
+						</form>
+						{#if form?.enrichError}
+							<p
+								class="mt-2 rounded-lg bg-rose-50 px-2 py-1 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+							>
+								{form.enrichError}
+							</p>
+						{/if}
+					{/if}
+				</div>
 			{/if}
 		</section>
 	{/if}

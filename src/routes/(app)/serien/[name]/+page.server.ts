@@ -14,6 +14,7 @@ import { getRelease } from '$lib/server/discogs';
 import { discogs, DiscogsError } from '$lib/server/discogs/client';
 import { isDreiAuflagenEnabled } from '$lib/server/settings';
 import { getAllFolgeCoversMap } from '$lib/server/db/folge-cover';
+import { updateCassette } from '$lib/server/db/cassettes';
 import { MEDIA_GRADES, SLEEVE_GRADES } from '$lib/server/db/schema';
 import { getEnrichStatus, resetEnrichStatus, startSeriesEnrich } from '$lib/server/series-enrich';
 import { isSupported as isDreiSupported } from '$lib/server/sources/dreimetadaten';
@@ -62,6 +63,50 @@ export const actions: Actions = {
 	resetEnrich: async ({ locals }) => {
 		ensureEditor(locals);
 		return { enrichReset: true, enrichStatus: resetEnrichStatus() };
+	},
+
+	// Cover-Quelle für alle Folgen der Serie auf einmal setzen (was in der
+	// Listen-/Grid-Vorschau angezeigt wird). Folgen ohne die gewählte Quelle
+	// werden übersprungen, statt auf ein leeres Cover zu fallen.
+	setCoverSourceBulk: async ({ request, params, locals }) => {
+		ensureEditor(locals);
+		const serie = decodeURIComponent(params.name);
+		const form = await request.formData();
+		const source = String(form.get('source') ?? '').trim();
+		if (!['auto', 'photo', 'discogs', 'external'].includes(source)) {
+			return fail(400, { coverBulkError: 'Ungültige Cover-Quelle.' });
+		}
+		const detail = getSeriesDetail(serie);
+		if (!detail) throw error(404);
+		const folgeCovers = getAllFolgeCoversMap();
+
+		const hasSource = (c: (typeof detail.items)[number]): boolean => {
+			switch (source) {
+				case 'photo':
+					return Boolean(c.coverFotoPath);
+				case 'discogs':
+					return Boolean(c.discogsCoverCachePath || c.discogsCoverUrl);
+				case 'external':
+					return c.folgeNr != null && folgeCovers.has(`${c.serie}|${c.folgeNr}`);
+				default:
+					return true; // 'auto' geht immer
+			}
+		};
+
+		let set = 0;
+		let skipped = 0;
+		for (const c of detail.items) {
+			if (c.coverSource === source) continue; // schon so → nichts tun
+			if (!hasSource(c)) {
+				skipped++;
+				continue;
+			}
+			updateCassette(c.id, {
+				coverSource: source as 'auto' | 'photo' | 'discogs' | 'external'
+			});
+			set++;
+		}
+		return { coverBulkResult: { source, set, skipped } };
 	},
 
 	uploadLogo: async ({ request, params, locals }) => {
