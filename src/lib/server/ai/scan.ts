@@ -12,7 +12,7 @@ Aus dem Foto einer Kassette oder ihres Covers extrahierst du strukturierte Metad
 
 Regeln:
 - Wenn du dir bei einem Feld unsicher bist, lass es WEG. Rate nicht.
-- "serie" enthält NUR den Serien-Namen ohne Folgennummer oder Episodentitel.
+- "serie" enthält NUR den Serien-Namen ohne Folgennummer oder Episodentitel. Bekannte Serien in ihrer üblichen Schreibweise (z.B. "Die drei ???", nicht "DIE DREI ???" — Logos sind oft in Großbuchstaben gesetzt). Aber: Ableger und Schwester-Serien sind eigene Serien und dürfen NICHT auf die Hauptserie normalisiert werden (z.B. ist "DiE DR3i" — Logo mit der Ziffer 3 im Wort — NICHT "Die drei ???").
 - "folge_nr" NUR übernehmen, wenn sie explizit als Folgennummer auf dem Cover steht (z.B. "Folge 14" oder die große Nummer direkt beim Serien-Namen/Titel). NIEMALS aus der Katalog-/Seriennummer ableiten: "115311" auf dem Rücken ist eine Seriennummer, NICHT Folge 115311 und auch nicht Folge 11 oder 31.
 - "seriennummer" ist die gedruckte/eingeprägte Katalognummer (oft 6-stellig, z.B. "115311") — ein anderes Feld als die Folgennummer. Verwechsle die beiden nicht.
 - "titel" enthält NUR den Episodentitel, ohne "Folge X" oder Serien-Namen davor. Behalte die exakte Groß-/Kleinschreibung wie auf dem Cover.
@@ -30,7 +30,7 @@ const SCAN_TOOL: Anthropic.Tool = {
 			serie: {
 				type: 'string',
 				description:
-					'Serien-Name ohne Folge/Titel, z.B. "Die drei ???", "TKKG", "Benjamin Blümchen".'
+					'Serien-Name ohne Folge/Titel in üblicher Schreibweise, z.B. "Die drei ???", "DiE DR3i", "TKKG", "Benjamin Blümchen". Ableger (DiE DR3i, Kids, !!!) nicht auf die Hauptserie normalisieren.'
 			},
 			folge_nr: {
 				type: 'integer',
@@ -147,7 +147,25 @@ function validateMediaGrade(value: string | undefined): string | undefined {
 	return (MEDIA_GRADES as readonly string[]).includes(value) ? value : undefined;
 }
 
-export async function scanCassettePhoto(buf: Buffer): Promise<ScanResult> {
+const MAX_KNOWN_SERIES = 150;
+
+/** System-Prompt plus Serien der Sammlung — die KI übernimmt deren Schreibweise. */
+export function buildSystemPrompt(knownSeries: readonly string[] = []): string {
+	const list = knownSeries
+		.map((s) => s.trim())
+		.filter(Boolean)
+		.slice(0, MAX_KNOWN_SERIES);
+	if (list.length === 0) return SYSTEM_PROMPT;
+	return `${SYSTEM_PROMPT}
+
+Serien, die in dieser Sammlung bereits existieren — bei Übereinstimmung exakt diese Schreibweise verwenden (aber keine andere Serie darauf umbiegen):
+${list.map((s) => `- ${s}`).join('\n')}`;
+}
+
+export async function scanCassettePhoto(
+	buf: Buffer,
+	opts: { knownSeries?: readonly string[] } = {}
+): Promise<ScanResult> {
 	const optimized = await prepareImage(buf);
 	const base64 = optimized.toString('base64');
 	const client = getAnthropic();
@@ -156,7 +174,7 @@ export async function scanCassettePhoto(buf: Buffer): Promise<ScanResult> {
 	const response = await client.messages.create({
 		model,
 		max_tokens: MAX_OUTPUT_TOKENS,
-		system: SYSTEM_PROMPT,
+		system: buildSystemPrompt(opts.knownSeries),
 		tools: [SCAN_TOOL],
 		tool_choice: { type: 'tool', name: 'save_cassette_metadata' },
 		messages: [

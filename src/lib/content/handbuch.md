@@ -89,9 +89,25 @@ aus der Galerie wählen. Die KI erkennt automatisch:
 > lesbaren Covern verlässt du dich besser auf die Discogs-Suche (siehe unten) –
 > deren Angaben haben Vorrang.
 
+Die erkannten Felder (Serie, Folge, Titel, Label, Jahr, Seriennummer) sind
+direkt im Scan-Fenster **editierbar**. Hat die KI etwas verwechselt – etwa
+„DiE DR3i" als „Die drei ???" gelesen –, korrigierst du es dort, bevor du
+übernimmst. Der Serie-Eintrag schlägt deine vorhandenen Serien vor.
+
+Darunter zeigt der Scanner die **Discogs-Zuordnung**: Der Suchbegriff folgt
+automatisch deinen korrigierten Feldern, du kannst ihn aber auch frei
+umschreiben und mit **„Suchen"** neue Treffer holen (nur Kassetten oder alle
+Formate). Ein Treffer wird durch Antippen ausgewählt – die App zeigt dir
+vorher, welche Werte Discogs dann überschreiben würde. Passt kein Treffer,
+tippst du die Auswahl wieder ab (oder „ohne Discogs übernehmen"); die
+Kassette wird dann mit deinen eigenen Angaben angelegt und du kannst die
+Verknüpfung später im Formular nachholen.
+
+Der Dubletten-Check („Hast du schon!") läuft nach jeder Korrektur erneut, damit
+er sich auf die richtige Serie und Folge bezieht.
+
 Nach dem Scan kannst du das Foto direkt **zuschneiden** (Knopf auf der Vorschau)
-und die erkannten Daten mit **„Übernehmen"** ins Formular einfügen. Erkennt die
-App eine mögliche Dublette in deiner Sammlung, wird sie dir angezeigt.
+und die Daten mit **„Übernehmen"** ins Formular einfügen.
 
 Das Scan-Foto wird vor dem Hochladen automatisch verkleinert – das spart
 Datenvolumen und beschleunigt den Upload, gerade unterwegs.
@@ -99,7 +115,9 @@ Datenvolumen und beschleunigt den Upload, gerade unterwegs.
 ### Discogs-Suche
 
 Wenn du Discogs verbunden hast (siehe [Einstellungen → Keys](#discogs--ki-schlüssel)),
-kannst du im Formular nach dem Release suchen. **Wählst du einen Treffer aus,
+kannst du im Formular nach dem Release suchen (**„Discogs suchen & verknüpfen"**
+bzw. **„Ändern"** bei bestehender Verknüpfung – die Suche startet sofort mit
+Serie, Folge und Titel aus dem Formular). **Wählst du einen Treffer aus,
 überschreiben dessen Angaben die KI-Daten** – Serie, Folgennummer, Titel, Label,
 Jahr und Format. Das ist der zuverlässigste Weg, gerade wenn das Cover die
 Folgennummer schlecht zeigt oder Serien- und Folgentitel vertauscht wirken.

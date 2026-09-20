@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeFolgeNr } from './scan';
+import { buildSystemPrompt, sanitizeFolgeNr } from './scan';
 
 describe('sanitizeFolgeNr', () => {
 	it('lässt plausible Folgennummern durch', () => {
@@ -31,5 +31,24 @@ describe('sanitizeFolgeNr', () => {
 	it('lässt Folgennummern durch, die nur Teil der Seriennummer sind', () => {
 		// Europa-Seriennummern enthalten oft die Folge — das ist legitim
 		expect(sanitizeFolgeNr(11, '115311')).toBe(11);
+	});
+});
+
+describe('buildSystemPrompt', () => {
+	it('hängt bekannte Serien als Liste an', () => {
+		const p = buildSystemPrompt(['Die drei ???', ' DiE DR3i ', '']);
+		expect(p).toContain('- Die drei ???');
+		expect(p).toContain('- DiE DR3i');
+		expect(p).not.toContain('- \n');
+	});
+	it('bleibt ohne Serien der reine Basis-Prompt', () => {
+		expect(buildSystemPrompt([])).toBe(buildSystemPrompt());
+		expect(buildSystemPrompt()).not.toContain('bereits existieren');
+	});
+	it('deckelt sehr lange Listen', () => {
+		const many = Array.from({ length: 500 }, (_, i) => `Serie ${i}`);
+		const p = buildSystemPrompt(many);
+		expect(p).toContain('- Serie 149');
+		expect(p).not.toContain('- Serie 150\n');
 	});
 });

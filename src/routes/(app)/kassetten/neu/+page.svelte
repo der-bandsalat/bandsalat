@@ -207,5 +207,5 @@
 {/if}
 
 {#if showScanner}
-	<PhotoScanner onpick={applyScan} onclose={() => (showScanner = false)} />
+	<PhotoScanner serien={data.serien} onpick={applyScan} onclose={() => (showScanner = false)} />
 {/if}

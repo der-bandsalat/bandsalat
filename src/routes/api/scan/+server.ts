@@ -3,65 +3,19 @@ import { hasAnthropic } from '$lib/server/ai/anthropic';
 import { consumeRateLimit } from '$lib/server/auth/rate-limit';
 import { ensureEditor } from '$lib/server/auth/guard';
 import { scanCassettePhoto } from '$lib/server/ai/scan';
-import { searchReleases } from '$lib/server/discogs';
+import { searchReleasesCassetteFirst } from '$lib/server/discogs';
+import { distinctSerien } from '$lib/server/db/cassettes';
 import { DiscogsError } from '$lib/server/discogs/client';
 import { env } from '$lib/server/env';
-import { findPotentialDuplicates } from '$lib/server/db/cassettes';
-import { getCachedPrices, priceForGrade } from '$lib/server/discogs/prices';
+import { duplicatePayloads } from '$lib/server/scan-duplicates';
 import { getUserById, incrementDemoScans } from '$lib/server/db/users';
 import { getDiscogsToken, getDiscogsUsername } from '$lib/server/settings';
 import { db } from '$lib/server/db/client';
 import { scanEvents } from '$lib/server/db/schema';
 import { randomUUID } from 'node:crypto';
-import { coverThumbUrl } from '$lib/util/cover';
 import type { SearchResult } from '$lib/server/discogs/types';
-import type { Cassette, MediaGrade } from '$lib/server/db/schema';
 
 const MAX_BYTES = 12 * 1024 * 1024;
-
-interface DuplicatePayload {
-	id: string;
-	serie: string;
-	folgeNr: number | null;
-	folgeNrLabel: string | null;
-	titel: string;
-	label: string | null;
-	jahr: number | null;
-	auflageVariante: string | null;
-	zustandMc: string | null;
-	zustandHuelle: string | null;
-	originalhuelle: boolean;
-	vollstaendig: boolean;
-	kaufpreisCent: number | null;
-	marktwertCent: number | null;
-	marktwertCurrency: string | null;
-	thumbUrl: string | null;
-	reason: 'exact' | 'release';
-}
-
-function toDuplicatePayload(c: Cassette, reason: 'exact' | 'release'): DuplicatePayload {
-	const cached = c.discogsReleaseId ? getCachedPrices(c.discogsReleaseId) : null;
-	const priced = cached ? priceForGrade(cached.data, c.zustandMc as MediaGrade | null) : null;
-	return {
-		id: c.id,
-		serie: c.serie,
-		folgeNr: c.folgeNr,
-		folgeNrLabel: c.folgeNrLabel,
-		titel: c.titel,
-		label: c.label,
-		jahr: c.jahr,
-		auflageVariante: c.auflageVariante,
-		zustandMc: c.zustandMc,
-		zustandHuelle: c.zustandHuelle,
-		originalhuelle: c.originalhuelle,
-		vollstaendig: c.vollstaendig,
-		kaufpreisCent: c.kaufpreisCent,
-		marktwertCent: priced?.cents ?? null,
-		marktwertCurrency: priced?.currency ?? cached?.currency ?? null,
-		thumbUrl: coverThumbUrl(c),
-		reason
-	};
-}
 
 export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	ensureEditor(locals);
@@ -135,7 +89,9 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 	let scanResult;
 	try {
 		const buf = Buffer.from(await file.arrayBuffer());
-		scanResult = await scanCassettePhoto(buf);
+		// Bekannte Serien der Sammlung → KI übernimmt deren Schreibweise und
+		// normalisiert Ableger (DiE DR3i) nicht auf die Hauptserie.
+		scanResult = await scanCassettePhoto(buf, { knownSeries: distinctSerien() });
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : 'Vision-API-Fehler.';
 		return json({ error: msg }, { status: 502 });
@@ -178,9 +134,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 		const query = queryParts.join(' ').trim();
 		if (query.length >= 3) {
 			try {
-				let res = await searchReleases(query, { format: 'Cassette' });
-				if (res.length === 0) res = await searchReleases(query, { format: null });
-				discogsHits = res.slice(0, 5);
+				discogsHits = (await searchReleasesCassetteFirst(query)).results.slice(0, 5);
 			} catch (err) {
 				if (err instanceof DiscogsError) {
 					discogsError = `${err.message}${err.detail ? ` (${err.detail})` : ''}`;
@@ -192,19 +146,20 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 	}
 
 	// Duplikat-Check gegen die lokale DB
-	const duplicateMatches = findPotentialDuplicates({
+	// Die geprüfte Anfrage geht mit zurück: Der Scanner leitet daraus den
+	// Cache-Schlüssel ab, statt die Server-Logik zu spiegeln.
+	const duplicatesQuery = {
 		serie: extracted.serie ?? null,
 		folgeNr: extracted.folge_nr ?? null,
 		releaseIds: discogsHits.map((h) => h.id)
-	});
-	const duplicates: DuplicatePayload[] = duplicateMatches.map((m) =>
-		toDuplicatePayload(m.cassette, m.reason)
-	);
+	};
+	const duplicates = duplicatePayloads(duplicatesQuery);
 
 	return json({
 		extracted,
 		discogs: { hits: discogsHits, error: discogsError, enabled: hasDiscogs },
 		duplicates,
+		duplicatesQuery,
 		model,
 		tokens
 	});

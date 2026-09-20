@@ -7,6 +7,48 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.8.1] – 2026-09-20
+
+### Features
+
+- **Scan-Korrektur vor der Übernahme**: Die vom KI-Scan erkannten Felder
+  (Serie, Folge, Titel, Label, Jahr, Seriennummer) sind direkt im Scan-Fenster
+  editierbar (Serie mit Vorschlägen aus der Sammlung). Verwechselt die KI z.B.
+  „DiE DR3i" mit „Die drei ???", lässt sich das korrigieren, bevor Discogs
+  und Dubletten-Check damit arbeiten.
+- **Discogs-Suche im Scanner**: eigenes Suchfeld (folgt den korrigierten
+  Feldern, frei änderbar), Format-Umschalter, Treffer an-/abwählbar mit
+  Vorschau, welche Werte Discogs überschreiben würde; „ohne Discogs
+  übernehmen" ist jetzt ein expliziter Weg.
+- **Dubletten-Check läuft nach Korrektur neu** (`GET /api/cassettes/duplicates`),
+  damit keine „Hast du schon!"-Warnung zur falschen Serie den Übernehmen-Knopf
+  blockiert. Discogs-Fehler aus dem Scan werden jetzt angezeigt.
+- **Discogs-Suche im Formular** („Ändern"/„Suchen & verknüpfen") sucht sofort
+  mit dem vorbelegten Begriff statt auf Eingabe zu warten.
+- Scan-Prompt: Ableger wie „DiE DR3i" werden nicht mehr auf die Hauptserie
+  normalisiert; die Serien der eigenen Sammlung gehen als Schreibweisen-
+  Referenz mit in den Prompt (`buildSystemPrompt`).
+
+### Fixes (Audit)
+
+- Korrigierte Serie/Folge/Titel heben einen automatisch gewählten
+  Discogs-Treffer auf — sonst hätte er die Korrektur beim Übernehmen wieder
+  überschrieben; Trefferliste zeigt an, wenn sie zu einem alten Suchbegriff
+  gehört.
+- `folge_label` bleibt erhalten, wenn die KI Nummer und Label liefert
+  („100" + „100 A/B/C").
+- Übernehmen ist gesperrt, solange der Dubletten-Re-Check läuft; verspätete
+  oder abgebrochene Antworten überschreiben den aktuellen Stand nicht mehr
+  (Ergebnis-Cache je Anfrage, Server gibt die geprüfte Anfrage zurück).
+- Discogs-Vorschau nennt auch das Format (MC/CD/LP), das überschrieben würde;
+  ungültige Jahresangaben werden im Scanner markiert statt still verworfen.
+- Abgebrochene Discogs-Suchen wurden als „Keine Treffer" gewertet.
+- Kassetten-zuerst-Suche mit Format-Fallback liegt jetzt einmal serverseitig
+  (`searchReleasesCassetteFirst`, `/api/discogs/search?fallback=1`); Scanner
+  und Discogs-Modal nutzen denselben Client-Helper (`$lib/util/discogs-search`).
+- Gemeinsame Folgennummer-Regel `parseFolgeNr` für Scanner und
+  Dubletten-Endpoint.
+
 ## [0.7.1] – 2026-06-16
 
 ### Features

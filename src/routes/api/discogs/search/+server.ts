@@ -1,5 +1,5 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
-import { searchReleases } from '$lib/server/discogs';
+import { searchReleases, searchReleasesCassetteFirst } from '$lib/server/discogs';
 import { DiscogsError } from '$lib/server/discogs/client';
 import { consumeRateLimit } from '$lib/server/auth/rate-limit';
 
@@ -14,9 +14,12 @@ export const GET: RequestHandler = async ({ url, locals, getClientAddress }) => 
 	const formatParam = url.searchParams.get('format');
 	const format = formatParam === '' || formatParam === 'all' ? null : (formatParam ?? 'Cassette');
 
+	// fallback=1: ohne Kassetten-Treffer auf alle Formate ausweichen (Scanner).
+	const fallback = url.searchParams.get('fallback') === '1' && format === 'Cassette';
 	try {
+		if (fallback) return json(await searchReleasesCassetteFirst(q));
 		const results = await searchReleases(q, { format });
-		return json({ results });
+		return json({ results, fellBack: false });
 	} catch (e) {
 		if (e instanceof DiscogsError) {
 			return json(

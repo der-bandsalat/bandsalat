@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { SearchResult } from '$lib/server/discogs/types';
+	import { fmtSearchHit, searchDiscogsReleases } from '$lib/util/discogs-search';
 	import Search from '@lucide/svelte/icons/search';
 	import Loader2 from '@lucide/svelte/icons/loader-circle';
 	import X from '@lucide/svelte/icons/x';
@@ -32,36 +34,38 @@
 		if (q === lastQuery && results.length > 0) return;
 		lastQuery = q;
 		abortCtrl?.abort();
-		abortCtrl = new AbortController();
+		const ctrl = new AbortController();
+		abortCtrl = ctrl;
 		loading = true;
 		error = null;
 		try {
-			const url = new URL('/api/discogs/search', location.origin);
-			url.searchParams.set('q', q);
-			url.searchParams.set('format', format);
-			const res = await fetch(url, { signal: abortCtrl.signal });
-			const body = await res.json();
-			if (!res.ok) {
-				error = body?.error ?? `Fehler ${res.status}`;
-				results = [];
-			} else {
-				results = body.results ?? [];
-				if (results.length === 0) error = 'Keine Treffer.';
-			}
+			results = (await searchDiscogsReleases(q, format, { signal: ctrl.signal })).results;
+			if (results.length === 0) error = 'Keine Treffer.';
 		} catch (e) {
-			if ((e as Error).name === 'AbortError') return;
+			if (ctrl.signal.aborted) return;
 			error = e instanceof Error ? e.message : 'Suche fehlgeschlagen.';
 			results = [];
 		} finally {
-			loading = false;
+			if (!ctrl.signal.aborted) loading = false;
 		}
 	}
 
+	// Mit vorbelegtem Suchbegriff (Formular → „Ändern"/„Suchen") sofort suchen —
+	// sonst sieht der Nutzer nur den leeren Tipp-Hinweis und muss erst tippen.
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	function onInput() {
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, 350);
 	}
+	// Über den Debounce, nicht sofort: wer den Begriff gleich umtippt, löst
+	// so keinen verlorenen Discogs-Call aus.
+	onMount(() => {
+		if (query.trim().length >= 2) onInput();
+		return () => {
+			if (timer) clearTimeout(timer);
+			abortCtrl?.abort();
+		};
+	});
 
 	function pick(r: SearchResult) {
 		onpick(r);
@@ -175,7 +179,7 @@
 								<div class="min-w-0 flex-1">
 									<div class="truncate text-sm font-medium">{r.title}</div>
 									<div class="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
-										{[r.year, r.label?.[0], r.country, r.catno].filter(Boolean).join(' · ')}
+										{fmtSearchHit(r)}
 									</div>
 									{#if joinFormat(r)}
 										<div class="mt-0.5 text-xs text-stone-400">{joinFormat(r)}</div>

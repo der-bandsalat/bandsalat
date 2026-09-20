@@ -1,6 +1,20 @@
 import { discogs } from './client';
 import type { ReleaseDetails, SearchResponse, SearchResult } from './types';
 
+/**
+ * Kassetten zuerst, sonst alle Formate — eine Regel für den Scan-Auto-Match
+ * und die manuelle Suche (Scanner/Modal mit `fallback=1`).
+ */
+export async function searchReleasesCassetteFirst(
+	q: string,
+	opts: { perPage?: number } = {}
+): Promise<{ results: SearchResult[]; fellBack: boolean }> {
+	const results = await searchReleases(q, { ...opts, format: 'Cassette' });
+	if (results.length > 0) return { results, fellBack: false };
+	const all = await searchReleases(q, { ...opts, format: null });
+	return { results: all, fellBack: all.length > 0 };
+}
+
 export async function searchReleases(
 	q: string,
 	opts: { format?: string | null; perPage?: number } = {}
